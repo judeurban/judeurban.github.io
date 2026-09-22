@@ -1,9 +1,11 @@
 ---
 title: Friday · Urban Kickoff
-date: October 9 · 7 PM
+date: October 9, 2026 · 7 PM
 overviewDay: Friday
-overviewDate: Oct 09 at 7 PM
+overviewDate: Oct 09, 2026 at 7 PM
 overviewTitle: Urban Kickoff
+weatherDate: 2026-10-09
+weatherZip: 74119
 variant: friday
 ---
 ![Illustrated kickball game announcement](../img/kick-ball-game.png)

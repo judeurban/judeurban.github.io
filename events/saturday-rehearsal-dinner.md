@@ -1,9 +1,11 @@
 ---
 title: Saturday · Rehearsal & Dinner
-date: October 10 · starts 4 PM
+date: October 10, 2026 · starts 4 PM
 overviewDay: Saturday
-overviewDate: Oct 10 at 4 PM
+overviewDate: Oct 10, 2026 at 4 PM
 overviewTitle: Rehearsal
+weatherDate: 2026-10-10
+weatherZip: 74055
 ---
 ![The barn at the rehearsal dinner location](../img/urban-barn.png)
 

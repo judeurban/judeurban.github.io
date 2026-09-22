@@ -1,9 +1,11 @@
 ---
 title: Saturday · Welcome Party
-date: October 10 · 6:30 – 8:30 PM
+date: October 10, 2026 · 6:30 – 8:30 PM
 overviewDay: Saturday
-overviewDate: Oct 10 at 6:30 PM
+overviewDate: Oct 10, 2026 at 6:30 PM
 overviewTitle: Welcome Party
+weatherDate: 2026-10-10
+weatherZip: 74055
 ---
 ![The barn at the welcome party location](../img/urban-barn.png)
 

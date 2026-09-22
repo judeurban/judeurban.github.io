@@ -1,9 +1,11 @@
 ---
 title: Sunday · Wedding Day!
-date: October 11
+date: October 11, 2026
 overviewDay: Sunday
-overviewDate: Oct 11
+overviewDate: Oct 11, 2026
 overviewTitle: Wedding Day
+weatherDate: 2026-10-11
+weatherZip: 74365
 ---
 ![Lakeview Hills wedding venue at sunset](../img/lakeview-hills.png)
 
