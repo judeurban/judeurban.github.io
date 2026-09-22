@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fcf4e3" stop-opacity="0.88"/>
+      <stop offset="1" stop-color="#fcf4e3" stop-opacity="0.58"/>
+    </linearGradient>
+  </defs>
+  <image xlink:href="lakeview-hills.png" width="1200" height="630" preserveAspectRatio="xMidYMid slice"/>
+  <rect width="1200" height="630" fill="url(#veil)"/>
+  <rect x="48" y="48" width="1104" height="534" rx="12" fill="none" stroke="#a62c25" stroke-opacity="0.72" stroke-width="2"/>
+  <text x="600" y="270" fill="#a62c25" font-family="Georgia, 'Times New Roman', serif" font-size="88" font-weight="700" text-anchor="middle">Jessie &amp; Jude</text>
+  <line x1="470" y1="305" x2="730" y2="305" stroke="#a62c25" stroke-width="2" stroke-opacity="0.85"/>
+  <text x="600" y="365" fill="#a62c25" font-family="Georgia, 'Times New Roman', serif" font-size="34" text-anchor="middle">Urban Wedding Weekend</text>
+  <text x="600" y="420" fill="#a62c25" font-family="Georgia, 'Times New Roman', serif" font-size="24" text-anchor="middle">October 9–11, 2026 · Tulsa, Oklahoma</text>
+</svg>
