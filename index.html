@@ -217,12 +217,36 @@
   }
   .hero p.tagline { font-size: 1.15rem; }
 
-  .welcome {
+  .thank-you-block {
+    max-width: 900px;
+    margin: 0 auto 4rem;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 5vw, 4.5rem);
+    border: 1px solid rgba(166, 44, 37, 0.2);
+    border-top: 8px solid var(--maroon);
+    border-radius: 28px;
+    background: rgba(255, 251, 241, 0.72);
+    box-shadow: 0 18px 36px rgba(118, 51, 35, 0.12), 0 3px 0 rgba(166, 44, 37, 0.08);
+  }
+  .thank-you-block h2 {
+    margin: 0 0 2rem;
+    color: var(--maroon);
+    text-align: center;
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+  }
+  .thank-you-letter {
     max-width: 720px;
-    margin: 0 auto 3rem;
+    margin-left: 5%;
     color: var(--maroon);
     font-size: clamp(1.2rem, 2.2vw, 1.65rem);
     line-height: 1.5;
+  }
+  .thank-you-letter p { margin: 0 0 1rem; }
+  .welcome-signoff {
+    margin: 1.5rem 0 0;
+    color: var(--maroon);
+    text-align: right;
+    font-size: 1.25rem;
+    font-weight: 700;
   }
 
   .rule { border-top: 2px dotted var(--divider); margin: 3rem 0; }
@@ -270,6 +294,37 @@
     margin-bottom: 0.8rem;
   }
   .greeting-sub { font-size: 1.2rem; margin-bottom: 4rem; }
+
+  .overview {
+    max-width: 900px;
+    margin: 0 auto 4rem;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border: 1px solid rgba(166, 44, 37, 0.2);
+    border-radius: 22px;
+    background: rgba(255, 251, 241, 0.55);
+  }
+  .overview h2 {
+    margin: 0 0 1.5rem;
+    color: var(--maroon);
+    text-align: center;
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+  }
+  .overview-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 0.7rem;
+    color: var(--maroon);
+    font-size: clamp(1rem, 2vw, 1.25rem);
+  }
+  .overview-date { white-space: nowrap; }
+  .overview-fill {
+    flex: 1;
+    min-width: 1rem;
+    border-bottom: 2px dotted var(--divider);
+    margin-bottom: 0.3rem;
+  }
+  .overview-title { white-space: nowrap; font-weight: 700; }
 
   .day-card {
     max-width: 940px;
@@ -342,6 +397,11 @@
     .hero { padding-bottom: 2.5rem; }
     .lookup-row { flex-direction: column; }
     .lookup-row button, select#guestSelect { width: 100%; }
+    .thank-you-block { border-top-width: 6px; border-radius: 20px; }
+    .thank-you-letter { margin-left: 0; }
+    .overview-row { flex-wrap: wrap; }
+    .overview-date { white-space: normal; }
+    .overview-title { margin-left: auto; }
     .day-card {
       margin-bottom: 2.5rem;
       border-top-width: 6px;
@@ -363,7 +423,11 @@
     <p class="tagline">An urban wedding weekend &middot; October 9&ndash;11 &middot; Tulsa, Oklahoma</p>
   </div>
 
-  <p class="welcome">We are so grateful that you are here. You are the people we hold closest. Thank you for celebrating with us and for loving us so well.</p>
+  <section class="thank-you-block" aria-labelledby="thank-you-title">
+    <h2 id="thank-you-title">Thank You</h2>
+    <div id="thankYou" class="thank-you-letter" aria-live="polite"></div>
+    <p class="welcome-signoff">Jessie &amp; Jude</p>
+  </section>
 
   <div class="lookup-card">
     <label for="guestSelect">What's your name?</label>
@@ -384,16 +448,15 @@
 /* ------------------------------------------------------------------
    Guest data lives in guests.csv, right next to this file.
    Format:  name,role
-   Valid roles: wedding_party, ceremony_party, family, friends
+  Valid roles: wedding_party, ceremony_party, friends, out_of_state_family, local_guest
 ------------------------------------------------------------------- */
-
-const FULL_ACCESS_ROLES = ["wedding_party", "ceremony_party"];
 
 const ROLE_LABELS = {
   wedding_party: "the wedding party",
   ceremony_party: "the ceremony party",
-  family: "family",
   friends: "friends",
+  out_of_state_family: "out-of-state family",
+  local_guest: "a local guest",
 };
 
 let GUESTS = [];
@@ -462,6 +525,17 @@ function inlineMarkdown(value) {
   html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
   return html;
+}
+
+async function loadThankYou() {
+  const response = await fetch("thank-you.md", { cache: "no-store" });
+  if (!response.ok) throw new Error("thank-you.md not found");
+  const text = await response.text();
+  const paragraphs = text.trim().split(/\r?\n\s*\r?\n/);
+  document.getElementById("thankYou").innerHTML = paragraphs
+    .filter(paragraph => paragraph.trim())
+    .map(paragraph => `<p>${inlineMarkdown(paragraph.replace(/\r?\n/g, " "))}</p>`)
+    .join("");
 }
 
 function parseFrontMatter(text) {
@@ -591,6 +665,25 @@ function buildItinerary(role) {
     .join("");
 }
 
+function buildOverview(role) {
+  const rows = EVENTS
+    .map(event => markdownEvent(event.text, role))
+    .filter(Boolean)
+    .map(event => `
+      <div class="overview-row">
+        <span class="overview-date"><strong>${escapeHtml(event.overviewDay)}</strong>, ${escapeHtml(event.overviewDate)}</span>
+        <span class="overview-fill"></span>
+        <span class="overview-title">${escapeHtml(event.overviewTitle)}</span>
+      </div>`)
+    .join("");
+
+  return `
+    <section class="overview" aria-labelledby="overview-title">
+      <h2 id="overview-title">Overview</h2>
+      ${rows}
+    </section>`;
+}
+
 function render(guest) {
   const results = document.getElementById("results");
   const label = ROLE_LABELS[guest.role] || guest.role;
@@ -599,6 +692,7 @@ function render(guest) {
     <hr class="rule">
     <p class="greeting">Hi ${guest.name}</p>
     <p class="greeting-sub">Here's your weekend &mdash; you're joining us as ${label}.</p>
+    ${buildOverview(guest.role)}
     ${buildItinerary(guest.role)}
     <div class="reset-row"><button id="resetBtn">Look up a different name</button></div>
   `;
@@ -637,9 +731,9 @@ function findGuest() {
 
 document.getElementById("findBtn").addEventListener("click", findGuest);
 
-Promise.all([loadGuests(), loadEvents()]).catch(() => {
+Promise.all([loadGuests(), loadEvents(), loadThankYou()]).catch(() => {
   document.getElementById("feedback").innerHTML =
-    '<span class="load-error">Couldn\'t load the event details. Make sure the events folder is published with this page.</span>';
+    '<span class="load-error">Couldn\'t load the page content. Make sure the events folder and thank-you.md are published with this page.</span>';
 });
 </script>
 </body>

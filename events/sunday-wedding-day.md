@@ -1,13 +1,16 @@
 ---
 title: Sunday · Wedding Day!
 date: October 11
+overviewDay: Sunday
+overviewDate: Oct 11
+overviewTitle: Wedding Day
 roles: everyone
 ---
 ![Lakeview Hills wedding venue at sunset](../img/lakeview-hills.png)
 
 This is the day! It's about an hour east of Tulsa, so plan your drive accordingly.
 
-<!-- roles: wedding_party, ceremony_party -->
+<!-- roles: wedding_party -->
 All hands will be on deck to help unload decor when we arrive — thank you in advance.
 <!-- /roles -->
 
@@ -15,10 +18,18 @@ All hands will be on deck to help unload decor when we arrive — thank you in a
 
 - **Where:** [344 E 523 Rd, Salina, OK](https://maps.google.com/?q=344+E+523+Rd,+Salina,+OK+74365)
 
-<!-- roles: wedding_party, ceremony_party -->
+<!-- roles: wedding_party -->
 - **Arrive:** 9 AM
 - **Lunch:** Noon
 - **Photos:** 1 PM
+<!-- /roles -->
+
+<!-- roles: ceremony_party -->
+- **Arrive:** 3 PM
+<!-- /roles -->
+
+<!-- roles: friends, out_of_state_family, local_guest -->
+- **Arrive:** 4:30 PM
 <!-- /roles -->
 
 - **Ceremony:** 5 PM

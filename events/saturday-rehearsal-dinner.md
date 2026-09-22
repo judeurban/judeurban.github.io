@@ -1,11 +1,14 @@
 ---
 title: Saturday · Rehearsal & Dinner
 date: October 10 · starts 4 PM
+overviewDay: Saturday
+overviewDate: Oct 10 at 4 PM
+overviewTitle: Rehearsal
 roles: wedding_party, ceremony_party
 ---
 ![The barn at the rehearsal dinner location](../img/urban-barn.png)
 
-Join us at Jude's parents' home to run through the ceremony, then stay for an Italian dinner with toasts.
+Join us at Jude’s parents’ home for the Rehearsal and Gambill’s Italian dinner with toasts.
 
 ## Details
 

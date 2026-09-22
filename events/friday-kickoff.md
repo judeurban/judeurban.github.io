@@ -1,12 +1,15 @@
 ---
 title: Friday · Urban Kickoff
 date: October 9 · 7 PM
+overviewDay: Friday
+overviewDate: Oct 09 at 7 PM
+overviewTitle: Urban Kickoff
 variant: friday
-roles: everyone
+roles: wedding_party, friends
 ---
 ![Illustrated kickball game announcement](../img/kick-ball-game.png)
 
-A sunset kickball game to kick off the weekend — chill, friendly, and a great way to meet everyone before the big day. Light snacks provided. Afterwards, we may wander over to Swirl 66 for custard, so keep an eye out for updates.
+Kick off the Urban wedding weekend with a sunset kickball game! This will be a chill and friendly game with our friends so everyone can meet! The park is super close to the Brut Hotel, icecream shops, dinner spots etc! We can see where the wind takes us afterwards! Maybe cool down at our fave custard spot, Swirl 66!? Keep an eye out for updates!
 
 ## Details
 
