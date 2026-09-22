@@ -16,3 +16,7 @@ Kick off the Urban wedding weekend with a sunset kickball game! This will be a c
 
 - **Where:** [1875 S Boulder Park Dr, Tulsa, OK](https://maps.google.com/?q=1875+S+Boulder+Park+Dr,+Tulsa,+OK+74119)
 - **When:** 7 PM
+
+## Menu
+
+- [Swirl 66 ice cream](https://maps.app.goo.gl/PUfLCo8hEYzvvks96)

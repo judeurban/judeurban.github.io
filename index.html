@@ -380,6 +380,21 @@
     font-size: 1rem;
     font-weight: 700;
   }
+  .menu-sub-block {
+    margin-top: 1.4rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid rgba(166, 44, 37, 0.2);
+    border-radius: 10px;
+    background: rgba(252, 244, 227, 0.7);
+  }
+  .menu-sub-block h4 {
+    margin: 0 0 0.35rem;
+    color: var(--maroon);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .menu-sub-block ul { margin: 0; padding-left: 1.2rem; }
+  .menu-sub-block li { margin: 0.2rem 0; }
   .day-card .day-intro {
     max-width: 760px;
     margin: 0 auto 2.5rem;
@@ -757,14 +772,19 @@ function markdownEvent(text, role, eventFile) {
   });
 
   let inDetails = false;
+  let inMenu = false;
   let paragraph = [];
   const intro = [];
   const rows = [];
   const notes = [];
+  const menuItems = [];
   const flushParagraph = () => {
     if (!paragraph.length) return;
-    const html = `<p>${inlineMarkdown(paragraph.join(" "))}</p>`;
-    (inDetails ? notes : intro).push(html);
+    if (inMenu) menuItems.push(inlineMarkdown(paragraph.join(" ")));
+    else {
+      const html = `<p>${inlineMarkdown(paragraph.join(" "))}</p>`;
+      (inDetails ? notes : intro).push(html);
+    }
     paragraph = [];
   };
 
@@ -772,7 +792,22 @@ function markdownEvent(text, role, eventFile) {
     if (line.trim() === "## Details") {
       flushParagraph();
       inDetails = true;
+      inMenu = false;
       return;
+    }
+    if (line.trim() === "## Menu") {
+      flushParagraph();
+      inDetails = false;
+      inMenu = true;
+      return;
+    }
+    if (inMenu) {
+      const menuItem = line.match(/^[-*]\s+(.+)$/);
+      if (menuItem) {
+        flushParagraph();
+        menuItems.push(inlineMarkdown(menuItem[1]));
+        return;
+      }
     }
     const row = line.match(/^[-*]\s+\*\*([^*]+):\*\*\s*(.+)$/);
     if (row && inDetails) {
@@ -797,12 +832,13 @@ function markdownEvent(text, role, eventFile) {
     ...metadata,
     introHtml: intro.join(""),
     rows,
+    menuHtml: menuItems.length ? `<ul>${menuItems.map(item => `<li>${item}</li>`).join("")}</ul>` : "",
     noteHtml: notes.join(""),
     variant: metadata.variant || "",
   };
 }
 
-function dayCard({ title, date, introHtml, rows, noteHtml, variant = "", weatherDate, weatherZip }) {
+function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "", weatherDate, weatherZip }) {
   const imageMatch = introHtml.match(/<img class="day-image"[^>]+>/);
   const imageHtml = imageMatch ? imageMatch[0] : "";
   const textHtml = imageHtml ? introHtml.replace(imageHtml, "") : introHtml;
@@ -823,6 +859,7 @@ function dayCard({ title, date, introHtml, rows, noteHtml, variant = "", weather
       <div class="details">
         <h3>Details</h3>
         ${rowsHtml}
+        ${menuHtml ? `<div class="menu-sub-block"><h4>Menu</h4>${menuHtml}</div>` : ""}
         <div class="weather-sub-block">
           <h4>Forecast</h4>
           ${weatherMarkup({ weatherDate, weatherZip })}

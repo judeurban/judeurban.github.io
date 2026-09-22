@@ -18,3 +18,13 @@ Join us at Jude’s parents’ home for the Rehearsal and Gambill’s Italian di
 - **Dinner:** 5 PM
 
 This part of the evening is just for the wedding and ceremony party — the Welcome Party picks up right after, and everyone's invited to that.
+
+## Menu
+
+- **Dinner:** Chicken Alfredo
+- **Dinner:** Vodka pasta and meatballs
+- **Salad:** Caesar salad
+- **Bread:** Focaccia bread
+- **Desserts:** Tiramisu and meringues
+- **Drinks:** Blackberry sangria, sparkling water, and cotton candy punch for the kids
+- Gluten-free options available
