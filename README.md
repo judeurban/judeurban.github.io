@@ -14,3 +14,5 @@ Assign one of these exact role values in `people.csv`. Invitation access is conf
 | `vendor` | Not shown | Not shown | Not shown | Regular, 4:30 PM |
 
 Wedding-day details are controlled in `events/sunday-wedding-day.md`. To add a local guest, use `local_guest` as the CSV role value.
+
+GitHub Pages note: keep `.nojekyll` at the repository root. The site fetches the Markdown event sources directly in the browser, so GitHub Pages must serve those `.md` files as static assets instead of processing them with Jekyll.
