@@ -81,19 +81,6 @@
 
   .lookup-row { display: flex; gap: 0.6rem; }
 
-  input#nameInput {
-    flex: 1;
-    min-width: 0;
-    font-family: "Times New Roman", Times, serif;
-    font-size: 1.05rem;
-    padding: 0.75rem 0.9rem;
-    border-radius: 8px;
-    border: 1.5px solid var(--divider);
-    background: #FFFDF3;
-    color: var(--ink);
-  }
-  input#nameInput:focus { outline: 2px solid var(--maroon); outline-offset: 1px; }
-
   button {
     font-family: "Times New Roman", Times, serif;
     font-size: 1.05rem;
@@ -255,12 +242,21 @@
     font-size: 1.25rem;
     font-weight: 700;
   }
-  input#nameInput {
+  select#guestSelect {
+    flex: 1;
+    min-width: 0;
+    min-height: 3.1rem;
+    padding: 0.75rem 0.9rem;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 1.05rem;
     border: 1px solid var(--maroon);
     border-radius: 0;
     background: transparent;
     color: var(--maroon);
+    cursor: pointer;
   }
+  select#guestSelect:focus { outline: 2px solid var(--maroon); outline-offset: 2px; }
+  select#guestSelect option { color: var(--ink); background: var(--bg); }
   button {
     border-radius: 0;
     background: var(--maroon);
@@ -344,6 +340,8 @@
   @media (max-width: 650px) {
     .wrap { padding: 2.5rem 1.1rem 4rem; }
     .hero { padding-bottom: 2.5rem; }
+    .lookup-row { flex-direction: column; }
+    .lookup-row button, select#guestSelect { width: 100%; }
     .day-card {
       margin-bottom: 2.5rem;
       border-top-width: 6px;
@@ -368,10 +366,11 @@
   <p class="welcome">We are so grateful that you are here. You are the people we hold closest. Thank you for celebrating with us and for loving us so well.</p>
 
   <div class="lookup-card">
-    <label for="nameInput">What's your name?</label>
+    <label for="guestSelect">What's your name?</label>
     <div class="lookup-row">
-      <input type="text" id="nameInput" list="nameSuggestions" placeholder="e.g. Sam Rivera" autocomplete="off">
-      <datalist id="nameSuggestions"></datalist>
+      <select id="guestSelect" aria-describedby="feedback">
+        <option value="">Select your name</option>
+      </select>
       <button id="findBtn">Find my weekend</button>
     </div>
     <div id="feedback"></div>
@@ -398,6 +397,7 @@ const ROLE_LABELS = {
 };
 
 let GUESTS = [];
+let EVENTS = [];
 
 function normalize(s) {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
@@ -423,11 +423,11 @@ async function loadGuests() {
     const text = await res.text();
     GUESTS = parseCSV(text);
 
-    const datalist = document.getElementById("nameSuggestions");
     GUESTS.forEach(g => {
       const opt = document.createElement("option");
       opt.value = g.name;
-      datalist.appendChild(opt);
+      opt.textContent = g.name;
+      document.getElementById("guestSelect").appendChild(opt);
     });
   } catch (err) {
     document.getElementById("feedback").innerHTML =
@@ -435,7 +435,113 @@ async function loadGuests() {
   }
 }
 
-function dayCard({ title, date, desc, rows, note, image, imageAlt, variant = "" }) {
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[character]));
+}
+
+function inlineMarkdown(value) {
+  let html = escapeHtml(value);
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
+    '<img class="day-image" src="$2" alt="$1">');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  return html;
+}
+
+function parseFrontMatter(text) {
+  const match = text.match(/^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/);
+  if (!match) throw new Error("Event markdown is missing front matter");
+
+  const metadata = {};
+  match[1].split(/\r?\n/).forEach(line => {
+    const separator = line.indexOf(":");
+    if (separator === -1) return;
+    metadata[line.slice(0, separator).trim()] = line.slice(separator + 1).trim();
+  });
+  return { metadata, body: match[2] };
+}
+
+function markdownEvent(text, role) {
+  const { metadata, body } = parseFrontMatter(text);
+  const allowedRoles = (metadata.roles || "everyone").split(",").map(roleName => roleName.trim());
+  if (!allowedRoles.includes("everyone") && !allowedRoles.includes(role)) return null;
+
+  const visibleLines = [];
+  let roleBlock = false;
+  let roleBlockAllowed = false;
+  body.split(/\r?\n/).forEach(line => {
+    const roleStart = line.match(/^<!-- roles: (.+) -->$/);
+    if (roleStart) {
+      roleBlock = true;
+      roleBlockAllowed = roleStart[1].split(",").map(roleName => roleName.trim()).includes(role);
+      return;
+    }
+    if (line.trim() === "<!-- /roles -->") {
+      roleBlock = false;
+      roleBlockAllowed = false;
+      return;
+    }
+    if (!roleBlock || roleBlockAllowed) visibleLines.push(line);
+  });
+
+  let inDetails = false;
+  let paragraph = [];
+  const intro = [];
+  const rows = [];
+  const notes = [];
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    const html = `<p>${inlineMarkdown(paragraph.join(" "))}</p>`;
+    (inDetails ? notes : intro).push(html);
+    paragraph = [];
+  };
+
+  visibleLines.forEach(line => {
+    if (line.trim() === "## Details") {
+      flushParagraph();
+      inDetails = true;
+      return;
+    }
+    const row = line.match(/^[-*]\s+\*\*([^*]+):\*\*\s*(.+)$/);
+    if (row && inDetails) {
+      flushParagraph();
+      rows.push({ label: row[1], value: inlineMarkdown(row[2]) });
+      return;
+    }
+    if (!line.trim()) {
+      flushParagraph();
+      return;
+    }
+    if (line.trim().startsWith("![")) {
+      flushParagraph();
+      intro.push(inlineMarkdown(line.trim()));
+      return;
+    }
+    paragraph.push(line.trim());
+  });
+  flushParagraph();
+
+  return {
+    ...metadata,
+    introHtml: intro.join(""),
+    rows,
+    noteHtml: notes.join(""),
+    variant: metadata.variant || "",
+  };
+}
+
+function dayCard({ title, date, introHtml, rows, noteHtml, variant = "" }) {
+  const imageMatch = introHtml.match(/<img class="day-image"[^>]+>/);
+  const imageHtml = imageMatch ? imageMatch[0] : "";
+  const textHtml = imageHtml ? introHtml.replace(imageHtml, "") : introHtml;
   const rowsHtml = rows.map(r => `
     <div class="detail-row">
       <span class="label">${r.label}</span>
@@ -447,94 +553,34 @@ function dayCard({ title, date, desc, rows, note, image, imageAlt, variant = "" 
       <h2>${title}</h2>
       <p class="date">${date}</p>
       <div class="day-content">
-        ${image ? `<img class="day-image" src="${image}" alt="${imageAlt}">` : ""}
-        <p class="desc day-intro">${desc}</p>
+        ${imageHtml}
+        <div class="desc day-intro">${textHtml}</div>
       </div>
       <div class="details">
         <h3>Details</h3>
         ${rowsHtml}
-        ${note ? `<p class="note">${note}</p>` : ""}
+        ${noteHtml ? `<div class="note">${noteHtml}</div>` : ""}
       </div>
     </div>`;
 }
 
+async function loadEvents() {
+  const manifestResponse = await fetch("events/events.json", { cache: "no-store" });
+  if (!manifestResponse.ok) throw new Error("events/events.json not found");
+  const files = await manifestResponse.json();
+  EVENTS = await Promise.all(files.map(async file => {
+    const response = await fetch(`events/${file}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`${file} could not be loaded`);
+    return { file, text: await response.text() };
+  }));
+}
+
 function buildItinerary(role) {
-  const fullAccess = FULL_ACCESS_ROLES.includes(role);
-  let html = "";
-
-  // Friday — everyone
-  html += dayCard({
-    variant: "friday",
-    title: "Friday &middot; Urban Kickoff",
-    date: "October 9 &middot; 7 PM",
-    image: "img/kick-ball-game.png",
-    imageAlt: "Illustrated kickball game announcement",
-    desc: "A sunset kickball game to kick off the weekend &mdash; chill, friendly, and a great way to meet everyone before the big day. Light snacks provided. Afterwards, we may wander over to Swirl 66 for custard, so keep an eye out for updates.",
-    rows: [
-      { label: "Where", value: `<a href="https://maps.google.com/?q=1875+S+Boulder+Park+Dr,+Tulsa,+OK+74119" target="_blank" rel="noopener">1875 S Boulder Park Dr, Tulsa, OK</a>` },
-      { label: "When", value: "7 PM" },
-    ],
-  });
-
-  // Saturday rehearsal — wedding party & ceremony party only
-  if (fullAccess) {
-    html += dayCard({
-      title: "Saturday &middot; Rehearsal &amp; Dinner",
-      date: "October 10 &middot; starts 4 PM",
-      image: "img/urban-barn.png",
-      imageAlt: "The barn at the rehearsal dinner location",
-      desc: "Join us at Jude's parents' home to run through the ceremony, then stay for an Italian dinner with toasts.",
-      rows: [
-        { label: "Where", value: `<a href="https://maps.google.com/?q=7176+N+Memorial+Dr,+Owasso,+OK+74055" target="_blank" rel="noopener">7176 N Memorial Dr, Owasso, OK</a>` },
-        { label: "Rehearsal", value: "4 PM" },
-        { label: "Dinner", value: "5 PM" },
-      ],
-      note: "This part of the evening is just for the wedding and ceremony party &mdash; the Welcome Party picks up right after, and everyone's invited to that.",
-    });
-  }
-
-  // Saturday welcome party — everyone
-  html += dayCard({
-    title: "Saturday &middot; Welcome Party",
-    date: "October 10 &middot; 6:30 &ndash; 8:30 PM",
-    image: "img/urban-barn.png",
-    imageAlt: "The barn at the welcome party location",
-    desc: "An easy evening with local sourdough and jams, snacks, music, and yard games. Kids are welcome!",
-    rows: [
-      { label: "Where", value: `<a href="https://maps.google.com/?q=7176+N+Memorial+Dr,+Owasso,+OK+74055" target="_blank" rel="noopener">7176 N Memorial Dr, Owasso, OK</a>` },
-      { label: "Starts", value: "6:30 PM" },
-      { label: "Ends", value: "8:30 PM" },
-    ],
-  });
-
-  // Sunday wedding day — everyone, extra detail for wedding/ceremony party
-  const sundayRows = fullAccess
-    ? [
-        { label: "Where", value: `<a href="https://maps.google.com/?q=344+E+523+Rd,+Salina,+OK+74365" target="_blank" rel="noopener">344 E 523 Rd, Salina, OK</a>` },
-        { label: "Arrive", value: "9 AM" },
-        { label: "Lunch", value: "Noon" },
-        { label: "Photos", value: "1 PM" },
-        { label: "Ceremony", value: "5 PM" },
-        { label: "Ends", value: "10 PM" },
-      ]
-    : [
-        { label: "Where", value: `<a href="https://maps.google.com/?q=344+E+523+Rd,+Salina,+OK+74365" target="_blank" rel="noopener">344 E 523 Rd, Salina, OK</a>` },
-        { label: "Ceremony", value: "5 PM" },
-        { label: "Ends", value: "10 PM" },
-      ];
-
-  html += dayCard({
-    title: "Sunday &middot; Wedding Day!",
-    date: "October 11",
-    image: "img/lakeview-hills.png",
-    imageAlt: "Lakeview Hills wedding venue at sunset",
-    desc: fullAccess
-      ? "This is the day! It's about an hour east of Tulsa, so plan your drive accordingly. All hands will be on deck to help unload decor when we arrive &mdash; thank you in advance."
-      : "This is the day! It's about an hour east of Tulsa, so plan your drive accordingly.",
-    rows: sundayRows,
-  });
-
-  return html;
+  return EVENTS
+    .map(event => markdownEvent(event.text, role))
+    .filter(Boolean)
+    .map(event => dayCard(event))
+    .join("");
 }
 
 function render(guest) {
@@ -552,15 +598,15 @@ function render(guest) {
     results.innerHTML = "";
     document.getElementById("feedback").textContent = "";
     document.getElementById("feedback").classList.remove("notfound");
-    document.getElementById("nameInput").value = "";
-    document.getElementById("nameInput").focus();
+    document.getElementById("guestSelect").selectedIndex = 0;
+    document.getElementById("guestSelect").focus();
   });
 }
 
 function findGuest() {
-  const input = document.getElementById("nameInput");
+  const select = document.getElementById("guestSelect");
   const feedback = document.getElementById("feedback");
-  const query = normalize(input.value);
+  const query = normalize(select.value);
 
   if (!query) {
     feedback.textContent = "Type your name to get started.";
@@ -582,11 +628,11 @@ function findGuest() {
 }
 
 document.getElementById("findBtn").addEventListener("click", findGuest);
-document.getElementById("nameInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") findGuest();
-});
 
-loadGuests();
+Promise.all([loadGuests(), loadEvents()]).catch(() => {
+  document.getElementById("feedback").innerHTML =
+    '<span class="load-error">Couldn\'t load the event details. Make sure the events folder is published with this page.</span>';
+});
 </script>
 </body>
 </html>
