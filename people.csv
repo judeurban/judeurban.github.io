@@ -1,11 +1,11 @@
 First Name,Last Name,role,Rehearsal Dinner - RSVP,Welcome Party - RSVP,Wedding Day - RSVP,,wedding_party
 Jessie,Reed,wedding_party,Attending,Attending,Attending,,friends
-Carson,Altom,wedding_party,Not on event guest list,Not on event guest list,Attending,,out_of_state_family
-Shannon,Altom,wedding_party,Not on event guest list,Attending,Attending,,ceremony_party
-Bill,Courtney,wedding_party,Not on event guest list,Attending,Attending,,local_guest
-Troy,Altom,wedding_party,Not on event guest list,Not on event guest list,Attending,,
-Nicki,Stoddard,wedding_party,Not on event guest list,Not on event guest list,Attending,,
-Emilee,Barrett,wedding_party,Not on event guest list,Not on event guest list,Attending,,
+Carson,Altom,local_guest,Not on event guest list,Not on event guest list,Attending,,out_of_state_family
+Shannon,Altom,local_guest,Not on event guest list,Attending,Attending,,ceremony_party
+Bill,Courtney,local_guest,Not on event guest list,Attending,Attending,,local_guest
+Troy,Altom,local_guest,Not on event guest list,Not on event guest list,Attending,,
+Nicki,Stoddard,local_guest,Not on event guest list,Not on event guest list,Attending,,
+Emilee,Barrett,local_guest,Not on event guest list,Not on event guest list,Attending,,
 Yobana,Beasley,wedding_party,Attending,Attending,Attending,,
 Xavier,Beasley,wedding_party,Attending,Attending,Attending,,
 Mitchell,Benefiel,wedding_party,Attending,Attending,Attending,,
