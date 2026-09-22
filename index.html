@@ -403,6 +403,11 @@ function normalize(s) {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+function lastName(name) {
+  const nameParts = normalize(name).split(" ");
+  return nameParts[nameParts.length - 1];
+}
+
 function parseCSV(text) {
   return text
     .split(/\r?\n/)
@@ -421,7 +426,10 @@ async function loadGuests() {
     const res = await fetch("guests.csv", { cache: "no-store" });
     if (!res.ok) throw new Error("guests.csv not found");
     const text = await res.text();
-    GUESTS = parseCSV(text);
+    GUESTS = parseCSV(text).sort((left, right) => {
+      const lastNameOrder = lastName(left.name).localeCompare(lastName(right.name));
+      return lastNameOrder || left.name.localeCompare(right.name);
+    });
 
     GUESTS.forEach(g => {
       const opt = document.createElement("option");
