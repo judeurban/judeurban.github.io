@@ -2,7 +2,7 @@
 
 ## Guest roles
 
-Assign one of these exact role values in `guests.csv`:
+Assign one of these exact role values in `people.csv`. Invitation access is configured in `wedding_party.json`:
 
 | Role | Kickball | Rehearsal | Welcome party | Wedding arrival |
 | --- | --- | --- | --- | --- |
@@ -11,5 +11,6 @@ Assign one of these exact role values in `guests.csv`:
 | `out_of_state_family` | Not shown | Not shown | 6:30 PM | Regular, 4:30 PM |
 | `ceremony_party` | Not shown | 4 PM | 6:30 PM | Early, 3 PM |
 | `local_guest` | Not shown | Not shown | Not shown | Regular, 4:30 PM |
+| `vendor` | Not shown | Not shown | Not shown | Regular, 4:30 PM |
 
 Wedding-day details are controlled in `events/sunday-wedding-day.md`. To add a local guest, use `local_guest` as the CSV role value.

@@ -446,21 +446,13 @@
 
 <script>
 /* ------------------------------------------------------------------
-   Guest data lives in guests.csv, right next to this file.
-   Format:  name,role
-  Valid roles: wedding_party, ceremony_party, friends, out_of_state_family, local_guest
+   Guest data lives in people.csv, right next to this file.
+   Invitation rules live in wedding_party.json.
 ------------------------------------------------------------------- */
-
-const ROLE_LABELS = {
-  wedding_party: "the wedding party",
-  ceremony_party: "the ceremony party",
-  friends: "friends",
-  out_of_state_family: "out-of-state family",
-  local_guest: "a local guest",
-};
 
 let GUESTS = [];
 let EVENTS = [];
+let INVITATION_CONFIG = {};
 
 function normalize(s) {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
@@ -478,7 +470,8 @@ function parseCSV(text) {
     .filter(line => line.length > 0)
     .slice(1) // drop header row
     .map(line => {
-      const [name, role] = line.split(",").map(s => s.trim());
+      const [firstName, lastName, role] = line.split(",").map(s => s.trim());
+      const name = [firstName, lastName].filter(Boolean).join(" ");
       return { name, role };
     })
     .filter(g => g.name && g.role);
@@ -486,8 +479,8 @@ function parseCSV(text) {
 
 async function loadGuests() {
   try {
-    const res = await fetch("guests.csv", { cache: "no-store" });
-    if (!res.ok) throw new Error("guests.csv not found");
+    const res = await fetch("people.csv", { cache: "no-store" });
+    if (!res.ok) throw new Error("people.csv not found");
     const text = await res.text();
     GUESTS = parseCSV(text).sort((left, right) => {
       const lastNameOrder = lastName(left.name).localeCompare(lastName(right.name));
@@ -502,8 +495,14 @@ async function loadGuests() {
     });
   } catch (err) {
     document.getElementById("feedback").innerHTML =
-      '<span class="load-error">Couldn\'t load the guest list (guests.csv). Make sure it\'s in the same folder as this page and that you\'re viewing it through GitHub Pages, not a local file.</span>';
+      '<span class="load-error">Couldn\'t load the guest list (people.csv). Make sure it\'s in the same folder as this page and that you\'re viewing it through GitHub Pages, not a local file.</span>';
   }
+}
+
+async function loadInvitationConfig() {
+  const response = await fetch("wedding_party.json", { cache: "no-store" });
+  if (!response.ok) throw new Error("wedding_party.json not found");
+  INVITATION_CONFIG = await response.json();
 }
 
 function escapeHtml(value) {
@@ -551,10 +550,11 @@ function parseFrontMatter(text) {
   return { metadata, body: match[2] };
 }
 
-function markdownEvent(text, role) {
+function markdownEvent(text, role, eventFile) {
   const { metadata, body } = parseFrontMatter(text);
-  const allowedRoles = (metadata.roles || "everyone").split(",").map(roleName => roleName.trim());
-  if (!allowedRoles.includes("everyone") && !allowedRoles.includes(role)) return null;
+  const eventKey = eventFile.replace(/\.md$/, "");
+  const roleConfig = INVITATION_CONFIG.roles?.[role];
+  if (!roleConfig || !roleConfig.events.includes(eventKey)) return null;
 
   const visibleLines = [];
   let roleBlock = false;
@@ -659,7 +659,7 @@ async function loadEvents() {
 
 function buildItinerary(role) {
   return EVENTS
-    .map(event => markdownEvent(event.text, role))
+    .map(event => markdownEvent(event.text, role, event.file))
     .filter(Boolean)
     .map(event => dayCard(event))
     .join("");
@@ -667,7 +667,7 @@ function buildItinerary(role) {
 
 function buildOverview(role) {
   const rows = EVENTS
-    .map(event => markdownEvent(event.text, role))
+    .map(event => markdownEvent(event.text, role, event.file))
     .filter(Boolean)
     .map(event => `
       <div class="overview-row">
@@ -686,7 +686,7 @@ function buildOverview(role) {
 
 function render(guest) {
   const results = document.getElementById("results");
-  const label = ROLE_LABELS[guest.role] || guest.role;
+  const label = INVITATION_CONFIG.roles?.[guest.role]?.label || guest.role;
 
   results.innerHTML = `
     <hr class="rule">
@@ -731,9 +731,9 @@ function findGuest() {
 
 document.getElementById("findBtn").addEventListener("click", findGuest);
 
-Promise.all([loadGuests(), loadEvents(), loadThankYou()]).catch(() => {
+Promise.all([loadGuests(), loadInvitationConfig(), loadEvents(), loadThankYou()]).catch(() => {
   document.getElementById("feedback").innerHTML =
-    '<span class="load-error">Couldn\'t load the page content. Make sure the events folder and thank-you.md are published with this page.</span>';
+    '<span class="load-error">Couldn\'t load the page content. Make sure people.csv, wedding_party.json, the events folder, and thank-you.md are published with this page.</span>';
 });
 </script>
 </body>

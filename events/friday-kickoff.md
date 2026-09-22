@@ -5,7 +5,6 @@ overviewDay: Friday
 overviewDate: Oct 09 at 7 PM
 overviewTitle: Urban Kickoff
 variant: friday
-roles: wedding_party, friends
 ---
 ![Illustrated kickball game announcement](../img/kick-ball-game.png)
 

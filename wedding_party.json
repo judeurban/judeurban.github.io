@@ -1,0 +1,34 @@
+{
+  "roles": {
+    "wedding_party": {
+      "label": "the wedding party",
+      "events": ["friday-kickoff", "saturday-rehearsal-dinner", "saturday-welcome-party", "sunday-wedding-day"],
+      "weddingArrival": "9 AM"
+    },
+    "friends": {
+      "label": "friends",
+      "events": ["friday-kickoff", "saturday-welcome-party", "sunday-wedding-day"],
+      "weddingArrival": "4:30 PM"
+    },
+    "out_of_state_family": {
+      "label": "out-of-state family",
+      "events": ["saturday-welcome-party", "sunday-wedding-day"],
+      "weddingArrival": "4:30 PM"
+    },
+    "ceremony_party": {
+      "label": "the ceremony party",
+      "events": ["saturday-rehearsal-dinner", "saturday-welcome-party", "sunday-wedding-day"],
+      "weddingArrival": "3 PM"
+    },
+    "local_guest": {
+      "label": "a local guest",
+      "events": ["sunday-wedding-day"],
+      "weddingArrival": "4:30 PM"
+    },
+    "vendor": {
+      "label": "a vendor",
+      "events": ["sunday-wedding-day"],
+      "weddingArrival": "4:30 PM"
+    }
+  }
+}

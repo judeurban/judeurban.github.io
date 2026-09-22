@@ -4,7 +4,6 @@ date: October 11
 overviewDay: Sunday
 overviewDate: Oct 11
 overviewTitle: Wedding Day
-roles: everyone
 ---
 ![Lakeview Hills wedding venue at sunset](../img/lakeview-hills.png)
 
@@ -28,7 +27,7 @@ All hands will be on deck to help unload decor when we arrive — thank you in a
 - **Arrive:** 3 PM
 <!-- /roles -->
 
-<!-- roles: friends, out_of_state_family, local_guest -->
+<!-- roles: friends, out_of_state_family, local_guest, vendor -->
 - **Arrive:** 4:30 PM
 <!-- /roles -->
 

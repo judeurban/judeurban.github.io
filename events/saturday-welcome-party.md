@@ -4,7 +4,6 @@ date: October 10 · 6:30 – 8:30 PM
 overviewDay: Saturday
 overviewDate: Oct 10 at 6:30 PM
 overviewTitle: Welcome Party
-roles: wedding_party, friends, out_of_state_family, ceremony_party
 ---
 ![The barn at the welcome party location](../img/urban-barn.png)
 

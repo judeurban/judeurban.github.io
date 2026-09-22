@@ -4,7 +4,6 @@ date: October 10 · starts 4 PM
 overviewDay: Saturday
 overviewDate: Oct 10 at 4 PM
 overviewTitle: Rehearsal
-roles: wedding_party, ceremony_party
 ---
 ![The barn at the rehearsal dinner location](../img/urban-barn.png)
 
