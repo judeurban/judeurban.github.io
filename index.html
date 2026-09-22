@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jessie & Jude — Urban Wedding Weekend</title>
+<style>
+  :root {
+    --bg: #F5DE8B;          /* butter yellow */
+    --bg-card: #FFF8E3;
+    --maroon: #6B1423;      /* deep maroon */
+    --maroon-2: #4E0E19;
+    --ink: #3B1116;
+    --ink-soft: #6E4650;
+    --divider: rgba(107, 20, 35, 0.4);
+    --shadow: rgba(59, 17, 22, 0.18);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: "Times New Roman", Times, serif;
+    line-height: 1.65;
+  }
+
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  .hero { text-align: center; padding: 1rem 0 1.75rem; }
+
+  .hero h1 {
+    font-weight: 700;
+    font-size: clamp(2.4rem, 9vw, 3.4rem);
+    margin: 0 0 0.35rem;
+    color: var(--maroon);
+  }
+
+  .hero p.tagline {
+    font-style: italic;
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+    margin: 0;
+  }
+
+  .rule {
+    border: none;
+    border-top: 2px dotted var(--divider);
+    margin: 1.75rem 0;
+  }
+
+  .welcome {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 1rem;
+    margin: 0 0 1.75rem;
+  }
+
+  .lookup-card {
+    background: var(--bg-card);
+    border-radius: 14px;
+    padding: 1.5rem 1.4rem;
+    box-shadow: 0 10px 30px var(--shadow);
+    border: 1px solid var(--divider);
+  }
+
+  .lookup-card label {
+    display: block;
+    font-size: 0.98rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.6rem;
+  }
+
+  .lookup-row { display: flex; gap: 0.6rem; }
+
+  input#nameInput {
+    flex: 1;
+    min-width: 0;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 1.05rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 8px;
+    border: 1.5px solid var(--divider);
+    background: #FFFDF3;
+    color: var(--ink);
+  }
+  input#nameInput:focus { outline: 2px solid var(--maroon); outline-offset: 1px; }
+
+  button {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding: 0.75rem 1.1rem;
+    border-radius: 8px;
+    border: none;
+    background: var(--maroon);
+    color: #FFF8E3;
+    cursor: pointer;
+  }
+  button:hover { background: var(--maroon-2); }
+  button:focus-visible { outline: 2px solid var(--maroon-2); outline-offset: 2px; }
+
+  #feedback {
+    margin-top: 0.9rem;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    min-height: 1.2em;
+  }
+  #feedback.notfound { color: var(--maroon); }
+
+  #results { margin-top: 2rem; }
+
+  .greeting {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--maroon);
+    margin: 0 0 0.3rem;
+  }
+  .greeting-sub {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    margin: 0 0 2rem;
+  }
+
+  .day-card {
+    background: var(--bg-card);
+    border-radius: 14px;
+    padding: 1.6rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 30px var(--shadow);
+    border: 1px solid var(--divider);
+  }
+
+  .day-card h2 {
+    color: var(--maroon);
+    font-size: 1.4rem;
+    margin: 0 0 0.15rem;
+  }
+  .day-card .date { color: var(--ink-soft); font-size: 0.92rem; margin: 0 0 0.9rem; }
+  .day-card p.desc { margin: 0 0 1.1rem; color: var(--ink); }
+  .day-card p.note {
+    margin: 0.9rem 0 0;
+    padding-top: 0.9rem;
+    border-top: 1px dashed var(--divider);
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+  }
+
+  .detail-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+    font-size: 1rem;
+  }
+  .detail-row .label { white-space: nowrap; color: var(--ink-soft); }
+  .detail-row .fill {
+    flex: 1;
+    border-bottom: 2px dotted var(--divider);
+    margin-bottom: 5px;
+    min-width: 12px;
+  }
+  .detail-row .value { white-space: nowrap; font-weight: 700; text-align: right; }
+  .detail-row .value a { color: var(--maroon); text-decoration: none; }
+  .detail-row .value a:hover { text-decoration: underline; }
+
+  .reset-row { text-align: center; margin-top: 1.5rem; }
+  .reset-row button {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1.5px solid var(--divider);
+    font-weight: 500;
+    font-size: 0.92rem;
+  }
+  .reset-row button:hover { color: var(--maroon); border-color: var(--maroon); }
+
+  .load-error {
+    text-align: center;
+    color: var(--maroon);
+    font-size: 0.92rem;
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 400px) {
+    .lookup-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>Jessie &amp; Jude</h1>
+    <p class="tagline">An urban wedding weekend &middot; October 9&ndash;11 &middot; Tulsa, Oklahoma</p>
+  </div>
+
+  <p class="welcome">We are so grateful you're here. Type your name below and we'll show you exactly where you fit into the weekend.</p>
+
+  <div class="lookup-card">
+    <label for="nameInput">What's your name?</label>
+    <div class="lookup-row">
+      <input type="text" id="nameInput" list="nameSuggestions" placeholder="e.g. Sam Rivera" autocomplete="off">
+      <datalist id="nameSuggestions"></datalist>
+      <button id="findBtn">Find my weekend</button>
+    </div>
+    <div id="feedback"></div>
+  </div>
+
+  <div id="results"></div>
+
+</div>
+
+<script>
+/* ------------------------------------------------------------------
+   Guest data lives in guests.csv, right next to this file.
+   Format:  name,role
+   Valid roles: wedding_party, ceremony_party, family, friends
+------------------------------------------------------------------- */
+
+const FULL_ACCESS_ROLES = ["wedding_party", "ceremony_party"];
+
+const ROLE_LABELS = {
+  wedding_party: "the wedding party",
+  ceremony_party: "the ceremony party",
+  family: "family",
+  friends: "friends",
+};
+
+let GUESTS = [];
+
+function normalize(s) {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function parseCSV(text) {
+  return text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .slice(1) // drop header row
+    .map(line => {
+      const [name, role] = line.split(",").map(s => s.trim());
+      return { name, role };
+    })
+    .filter(g => g.name && g.role);
+}
+
+async function loadGuests() {
+  try {
+    const res = await fetch("guests.csv", { cache: "no-store" });
+    if (!res.ok) throw new Error("guests.csv not found");
+    const text = await res.text();
+    GUESTS = parseCSV(text);
+
+    const datalist = document.getElementById("nameSuggestions");
+    GUESTS.forEach(g => {
+      const opt = document.createElement("option");
+      opt.value = g.name;
+      datalist.appendChild(opt);
+    });
+  } catch (err) {
+    document.getElementById("feedback").innerHTML =
+      '<span class="load-error">Couldn\'t load the guest list (guests.csv). Make sure it\'s in the same folder as this page and that you\'re viewing it through GitHub Pages, not a local file.</span>';
+  }
+}
+
+function dayCard({ title, date, desc, rows, note }) {
+  const rowsHtml = rows.map(r => `
+    <div class="detail-row">
+      <span class="label">${r.label}</span>
+      <span class="fill"></span>
+      <span class="value">${r.value}</span>
+    </div>`).join("");
+  return `
+    <div class="day-card">
+      <h2>${title}</h2>
+      <p class="date">${date}</p>
+      <p class="desc">${desc}</p>
+      ${rowsHtml}
+      ${note ? `<p class="note">${note}</p>` : ""}
+    </div>`;
+}
+
+function buildItinerary(role) {
+  const fullAccess = FULL_ACCESS_ROLES.includes(role);
+  let html = "";
+
+  // Friday — everyone
+  html += dayCard({
+    title: "Friday &middot; Urban Kickoff",
+    date: "October 9 &middot; 7 PM",
+    desc: "A sunset kickball game to kick off the weekend &mdash; chill, friendly, and a great way to meet everyone before the big day. Light snacks provided. Afterwards, we may wander over to Swirl 66 for custard, so keep an eye out for updates.",
+    rows: [
+      { label: "Where", value: `<a href="https://maps.google.com/?q=1875+S+Boulder+Park+Dr,+Tulsa,+OK+74119" target="_blank" rel="noopener">1875 S Boulder Park Dr, Tulsa, OK</a>` },
+      { label: "When", value: "7 PM" },
+    ],
+  });
+
+  // Saturday rehearsal — wedding party & ceremony party only
+  if (fullAccess) {
+    html += dayCard({
+      title: "Saturday &middot; Rehearsal &amp; Dinner",
+      date: "October 10 &middot; starts 4 PM",
+      desc: "Join us at Jude's parents' home to run through the ceremony, then stay for an Italian dinner with toasts.",
+      rows: [
+        { label: "Where", value: `<a href="https://maps.google.com/?q=7176+N+Memorial+Dr,+Owasso,+OK+74055" target="_blank" rel="noopener">7176 N Memorial Dr, Owasso, OK</a>` },
+        { label: "Rehearsal", value: "4 PM" },
+        { label: "Dinner", value: "5 PM" },
+      ],
+      note: "This part of the evening is just for the wedding and ceremony party &mdash; the Welcome Party picks up right after, and everyone's invited to that.",
+    });
+  }
+
+  // Saturday welcome party — everyone
+  html += dayCard({
+    title: "Saturday &middot; Welcome Party",
+    date: "October 10 &middot; 6:30 &ndash; 8:30 PM",
+    desc: "An easy evening with local sourdough and jams, snacks, music, and yard games. Kids are welcome!",
+    rows: [
+      { label: "Where", value: `<a href="https://maps.google.com/?q=7176+N+Memorial+Dr,+Owasso,+OK+74055" target="_blank" rel="noopener">7176 N Memorial Dr, Owasso, OK</a>` },
+      { label: "Starts", value: "6:30 PM" },
+      { label: "Ends", value: "8:30 PM" },
+    ],
+  });
+
+  // Sunday wedding day — everyone, extra detail for wedding/ceremony party
+  const sundayRows = fullAccess
+    ? [
+        { label: "Where", value: `<a href="https://maps.google.com/?q=344+E+523+Rd,+Salina,+OK+74365" target="_blank" rel="noopener">344 E 523 Rd, Salina, OK</a>` },
+        { label: "Arrive", value: "9 AM" },
+        { label: "Lunch", value: "Noon" },
+        { label: "Photos", value: "1 PM" },
+        { label: "Ceremony", value: "5 PM" },
+        { label: "Ends", value: "10 PM" },
+      ]
+    : [
+        { label: "Where", value: `<a href="https://maps.google.com/?q=344+E+523+Rd,+Salina,+OK+74365" target="_blank" rel="noopener">344 E 523 Rd, Salina, OK</a>` },
+        { label: "Ceremony", value: "5 PM" },
+        { label: "Ends", value: "10 PM" },
+      ];
+
+  html += dayCard({
+    title: "Sunday &middot; Wedding Day!",
+    date: "October 11",
+    desc: fullAccess
+      ? "This is the day! It's about an hour east of Tulsa, so plan your drive accordingly. All hands will be on deck to help unload decor when we arrive &mdash; thank you in advance."
+      : "This is the day! It's about an hour east of Tulsa, so plan your drive accordingly.",
+    rows: sundayRows,
+  });
+
+  return html;
+}
+
+function render(guest) {
+  const results = document.getElementById("results");
+  const label = ROLE_LABELS[guest.role] || guest.role;
+
+  results.innerHTML = `
+    <hr class="rule">
+    <p class="greeting">Hi ${guest.name} 👋</p>
+    <p class="greeting-sub">Here's your weekend &mdash; you're joining us as ${label}.</p>
+    ${buildItinerary(guest.role)}
+    <div class="reset-row"><button id="resetBtn">Look up a different name</button></div>
+  `;
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    results.innerHTML = "";
+    document.getElementById("feedback").textContent = "";
+    document.getElementById("feedback").classList.remove("notfound");
+    document.getElementById("nameInput").value = "";
+    document.getElementById("nameInput").focus();
+  });
+}
+
+function findGuest() {
+  const input = document.getElementById("nameInput");
+  const feedback = document.getElementById("feedback");
+  const query = normalize(input.value);
+
+  if (!query) {
+    feedback.textContent = "Type your name to get started.";
+    feedback.classList.remove("notfound");
+    return;
+  }
+
+  const match = GUESTS.find(g => normalize(g.name) === query);
+
+  if (match) {
+    feedback.textContent = "";
+    feedback.classList.remove("notfound");
+    render(match);
+  } else {
+    feedback.textContent = "We couldn't find that name on the list — double check the spelling, or reach out to Jessie or Jude directly.";
+    feedback.classList.add("notfound");
+    document.getElementById("results").innerHTML = "";
+  }
+}
+
+document.getElementById("findBtn").addEventListener("click", findGuest);
+document.getElementById("nameInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") findGuest();
+});
+
+loadGuests();
+</script>
+</body>
+</html>
