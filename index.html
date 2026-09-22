@@ -93,6 +93,7 @@
     cursor: pointer;
   }
   button:hover { background: var(--maroon-2); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
   button:focus-visible { outline: 2px solid var(--maroon-2); outline-offset: 2px; }
 
   #feedback {
@@ -266,6 +267,7 @@
     font-size: 1.25rem;
     font-weight: 700;
   }
+  input#guestSearch,
   select#guestSelect {
     flex: 1;
     min-width: 0;
@@ -279,8 +281,12 @@
     color: var(--maroon);
     cursor: pointer;
   }
+  input#guestSearch { cursor: text; }
+  input#guestSearch:focus,
   select#guestSelect:focus { outline: 2px solid var(--maroon); outline-offset: 2px; }
   select#guestSelect option { color: var(--ink); background: var(--bg); }
+  select#guestSelect[hidden] { display: none; }
+  .lookup-hint { margin: 0.7rem 0 0; color: var(--ink-soft); font-size: 0.95rem; }
   button {
     border-radius: 0;
     background: var(--maroon);
@@ -396,7 +402,7 @@
     .wrap { padding: 2.5rem 1.1rem 4rem; }
     .hero { padding-bottom: 2.5rem; }
     .lookup-row { flex-direction: column; }
-    .lookup-row button, select#guestSelect { width: 100%; }
+    .lookup-row button, input#guestSearch, select#guestSelect { width: 100%; }
     .thank-you-block { border-top-width: 6px; border-radius: 20px; }
     .thank-you-letter { margin-left: 0; }
     .overview-row { flex-wrap: wrap; }
@@ -430,13 +436,15 @@
   </section>
 
   <div class="lookup-card">
-    <label for="guestSelect">What's your name?</label>
+    <label for="guestSearch">Search your name</label>
     <div class="lookup-row">
-      <select id="guestSelect" aria-describedby="feedback">
+      <input type="search" id="guestSearch" placeholder="Type at least 2 letters" autocomplete="off" autocapitalize="words" spellcheck="false" aria-describedby="lookupHint feedback">
+      <select id="guestSelect" aria-label="Matching guest names" aria-describedby="feedback" hidden disabled>
         <option value="">Select your name</option>
       </select>
-      <button id="findBtn">Find my weekend</button>
+      <button id="findBtn" disabled>Find my weekend</button>
     </div>
+    <p id="lookupHint" class="lookup-hint">Your name will appear after you start typing.</p>
     <div id="feedback"></div>
   </div>
 
@@ -484,13 +492,37 @@ async function loadGuests() {
     const lastNameOrder = lastName(left.name).localeCompare(lastName(right.name));
     return lastNameOrder || left.name.localeCompare(right.name);
   });
+  updateGuestMatches();
+}
 
-  GUESTS.forEach(g => {
-    const opt = document.createElement("option");
-    opt.value = g.name;
-    opt.textContent = g.name;
-    document.getElementById("guestSelect").appendChild(opt);
-  });
+function updateGuestMatches() {
+  const search = document.getElementById("guestSearch");
+  const select = document.getElementById("guestSelect");
+  const button = document.getElementById("findBtn");
+  const hint = document.getElementById("lookupHint");
+  const query = normalize(search.value);
+  const minimumCharacters = 2;
+
+  select.replaceChildren(new Option("Select your name", ""));
+  select.value = "";
+  select.disabled = true;
+  select.hidden = true;
+  button.disabled = true;
+
+  if (query.length < minimumCharacters) {
+    hint.textContent = query.length === 0
+      ? "Your name will appear after you start typing."
+      : "Type one more character to search.";
+    return;
+  }
+
+  const matches = GUESTS.filter(guest => normalize(guest.name).includes(query));
+  matches.forEach(guest => select.appendChild(new Option(guest.name, guest.name)));
+  select.disabled = matches.length === 0;
+  select.hidden = matches.length === 0;
+  hint.textContent = matches.length === 0
+    ? "No matching names found. Check the spelling and try again."
+    : `${matches.length} matching name${matches.length === 1 ? "" : "s"} found. Select yours below.`;
 }
 
 async function fetchResource(path) {
@@ -702,8 +734,10 @@ function render(guest) {
     results.innerHTML = "";
     document.getElementById("feedback").textContent = "";
     document.getElementById("feedback").classList.remove("notfound");
+    document.getElementById("guestSearch").value = "";
     document.getElementById("guestSelect").selectedIndex = 0;
-    document.getElementById("guestSelect").focus();
+    updateGuestMatches();
+    document.getElementById("guestSearch").focus();
   });
 }
 
@@ -732,6 +766,10 @@ function findGuest() {
 }
 
 document.getElementById("findBtn").addEventListener("click", findGuest);
+document.getElementById("guestSearch").addEventListener("input", updateGuestMatches);
+document.getElementById("guestSelect").addEventListener("change", (event) => {
+  document.getElementById("findBtn").disabled = !event.target.value;
+});
 
 const contentLoaders = [
   ["Guest list", loadGuests],
