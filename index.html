@@ -478,31 +478,36 @@ function parseCSV(text) {
 }
 
 async function loadGuests() {
-  try {
-    const res = await fetch("people.csv", { cache: "no-store" });
-    if (!res.ok) throw new Error("people.csv not found");
-    const text = await res.text();
-    GUESTS = parseCSV(text).sort((left, right) => {
-      const lastNameOrder = lastName(left.name).localeCompare(lastName(right.name));
-      return lastNameOrder || left.name.localeCompare(right.name);
-    });
+  const resource = await fetchResource("people.csv");
+  const text = await resource.response.text();
+  GUESTS = parseCSV(text).sort((left, right) => {
+    const lastNameOrder = lastName(left.name).localeCompare(lastName(right.name));
+    return lastNameOrder || left.name.localeCompare(right.name);
+  });
 
-    GUESTS.forEach(g => {
-      const opt = document.createElement("option");
-      opt.value = g.name;
-      opt.textContent = g.name;
-      document.getElementById("guestSelect").appendChild(opt);
-    });
-  } catch (err) {
-    document.getElementById("feedback").innerHTML =
-      '<span class="load-error">Couldn\'t load the guest list (people.csv). Make sure it\'s in the same folder as this page and that you\'re viewing it through GitHub Pages, not a local file.</span>';
+  GUESTS.forEach(g => {
+    const opt = document.createElement("option");
+    opt.value = g.name;
+    opt.textContent = g.name;
+    document.getElementById("guestSelect").appendChild(opt);
+  });
+}
+
+async function fetchResource(path) {
+  const url = new URL(path, document.baseURI).href;
+  let response;
+  try {
+    response = await fetch(url, { cache: "no-store" });
+  } catch (error) {
+    throw new Error(`${path} failed to fetch (${error.message})`);
   }
+  if (!response.ok) throw new Error(`${path} returned HTTP ${response.status} (${url})`);
+  return { response, url };
 }
 
 async function loadInvitationConfig() {
-  const response = await fetch("wedding_party.json", { cache: "no-store" });
-  if (!response.ok) throw new Error("wedding_party.json not found");
-  INVITATION_CONFIG = await response.json();
+  const resource = await fetchResource("wedding_party.json");
+  INVITATION_CONFIG = await resource.response.json();
 }
 
 function escapeHtml(value) {
@@ -527,9 +532,8 @@ function inlineMarkdown(value) {
 }
 
 async function loadThankYou() {
-  const response = await fetch("thank-you.md", { cache: "no-store" });
-  if (!response.ok) throw new Error("thank-you.md not found");
-  const text = await response.text();
+  const resource = await fetchResource("thank-you.md");
+  const text = await resource.response.text();
   const paragraphs = text.trim().split(/\r?\n\s*\r?\n/);
   document.getElementById("thankYou").innerHTML = paragraphs
     .filter(paragraph => paragraph.trim())
@@ -560,7 +564,7 @@ function markdownEvent(text, role, eventFile) {
   let roleBlock = false;
   let roleBlockAllowed = false;
   body.split(/\r?\n/).forEach(line => {
-    const roleStart = line.match(/^<!-- roles: (.+) -->$/);
+    const roleStart = line.match(new RegExp("^" + "<" + "!-- roles: (.+) -->$"));
     if (roleStart) {
       roleBlock = true;
       roleBlockAllowed = roleStart[1].split(",").map(roleName => roleName.trim()).includes(role);
@@ -647,13 +651,11 @@ function dayCard({ title, date, introHtml, rows, noteHtml, variant = "" }) {
 }
 
 async function loadEvents() {
-  const manifestResponse = await fetch("events/events.json", { cache: "no-store" });
-  if (!manifestResponse.ok) throw new Error("events/events.json not found");
-  const files = await manifestResponse.json();
+  const manifestResource = await fetchResource("events/events.json");
+  const files = await manifestResource.response.json();
   EVENTS = await Promise.all(files.map(async file => {
-    const response = await fetch(`events/${file}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(`${file} could not be loaded`);
-    return { file, text: await response.text() };
+    const resource = await fetchResource(`events/${file}`);
+    return { file, text: await resource.response.text() };
   }));
 }
 
@@ -731,9 +733,26 @@ function findGuest() {
 
 document.getElementById("findBtn").addEventListener("click", findGuest);
 
-Promise.all([loadGuests(), loadInvitationConfig(), loadEvents(), loadThankYou()]).catch(() => {
-  document.getElementById("feedback").innerHTML =
-    '<span class="load-error">Couldn\'t load the page content. Make sure people.csv, wedding_party.json, the events folder, and thank-you.md are published with this page.</span>';
+const contentLoaders = [
+  ["Guest list", loadGuests],
+  ["Invitation config", loadInvitationConfig],
+  ["Event content", loadEvents],
+  ["Thank-you letter", loadThankYou],
+];
+
+Promise.allSettled(contentLoaders.map(([, loader]) => loader())).then(results => {
+  const failures = results
+    .map((result, index) => result.status === "rejected" ? `${contentLoaders[index][0]}: ${result.reason.message}` : null)
+    .filter(Boolean);
+  if (failures.length) {
+    document.getElementById("feedback").innerHTML = `
+      <div class="load-error">
+        <strong>Couldn't load the page content.</strong>
+        <p>Deployment diagnostics:</p>
+        <ul>${failures.map(failure => `<li>${escapeHtml(failure)}</li>`).join("")}</ul>
+        <p>Confirm these files are published from the same GitHub Pages source as index.html.</p>
+      </div>`;
+  }
 });
 </script>
 </body>
