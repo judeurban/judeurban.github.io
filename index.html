@@ -195,6 +195,167 @@
     .lookup-row { flex-direction: column; }
   }
 </style>
+<style>
+  :root {
+    --bg: #fcf4e3;
+    --bg-card: transparent;
+    --maroon: #a62c25;
+    --maroon-2: #81221d;
+    --ink: #a62c25;
+    --ink-soft: #a62c25;
+    --divider: rgba(166, 44, 37, 0.55);
+    --shadow: none;
+  }
+
+  html, body { background: var(--bg); color: var(--ink); }
+
+  body { font-family: "Times New Roman", Times, serif; line-height: 1.55; }
+
+  .wrap { max-width: 980px; padding: 4rem 2rem 6rem; }
+
+  .hero { padding: 1rem 0 3.5rem; }
+  .hero h1 {
+    font-size: clamp(3.6rem, 11vw, 7.5rem);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    margin-bottom: 1rem;
+  }
+  .hero h1::after {
+    content: "Urban Wedding Weekend";
+    display: block;
+    font-size: clamp(1.25rem, 3vw, 2rem);
+    line-height: 1;
+    letter-spacing: 0;
+    margin-top: 1.25rem;
+  }
+  .hero p.tagline { font-size: 1.15rem; }
+
+  .welcome {
+    max-width: 720px;
+    margin: 0 auto 3rem;
+    color: var(--maroon);
+    font-size: clamp(1.2rem, 2.2vw, 1.65rem);
+    line-height: 1.5;
+  }
+
+  .rule { border-top: 2px dotted var(--divider); margin: 3rem 0; }
+
+  .lookup-card {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 2rem 0;
+    border: 0;
+    border-top: 2px solid var(--maroon);
+    border-bottom: 2px solid var(--maroon);
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .lookup-card label {
+    color: var(--maroon);
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  input#nameInput {
+    border: 1px solid var(--maroon);
+    border-radius: 0;
+    background: transparent;
+    color: var(--maroon);
+  }
+  button {
+    border-radius: 0;
+    background: var(--maroon);
+    color: var(--bg);
+  }
+
+  #results { margin-top: 4rem; }
+  .greeting {
+    font-size: clamp(2.5rem, 7vw, 5rem);
+    line-height: 0.95;
+    margin-bottom: 0.8rem;
+  }
+  .greeting-sub { font-size: 1.2rem; margin-bottom: 4rem; }
+
+  .day-card {
+    max-width: 940px;
+    padding: clamp(1.5rem, 4vw, 3.5rem);
+    margin: 0 auto 4rem;
+    border: 1px solid rgba(166, 44, 37, 0.2);
+    border-top: 8px solid var(--maroon);
+    border-radius: 28px;
+    box-shadow: 0 18px 36px rgba(118, 51, 35, 0.12), 0 3px 0 rgba(166, 44, 37, 0.08);
+    background: rgba(255, 251, 241, 0.72);
+  }
+  .day-card h2 {
+    max-width: 880px;
+    margin: 0 auto 0.9rem;
+    color: var(--maroon);
+    text-align: center;
+    font-size: clamp(2.6rem, 7vw, 5.8rem);
+    line-height: 0.94;
+  }
+  .day-card .date { text-align: center; font-size: 1.2rem; margin-bottom: 2rem; }
+  .day-card .day-intro {
+    max-width: 760px;
+    margin: 0 auto 2.5rem;
+    font-size: clamp(1.2rem, 2.1vw, 1.55rem);
+    line-height: 1.75;
+  }
+  .day-card .day-image {
+    width: 100%;
+    max-height: 580px;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto 2rem;
+    border-radius: 18px;
+    box-shadow: 0 8px 18px rgba(59, 17, 22, 0.12);
+  }
+  .day-card.friday .day-content {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.85fr) 1.15fr;
+    gap: 2rem;
+    align-items: center;
+    max-width: 900px;
+    margin: 0 auto 2.5rem;
+  }
+  .day-card.friday .day-image { margin: 0; max-height: 520px; }
+  .day-card.friday .day-intro { margin: 0; }
+
+  .details {
+    max-width: 720px;
+    margin: 0 auto;
+    padding-top: 1.5rem;
+    padding-bottom: 0.35rem;
+    border-top: 1px dotted var(--divider);
+  }
+  .details h3 {
+    text-align: center;
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    margin: 0 0 1.2rem;
+  }
+  .detail-row { font-size: clamp(1rem, 2vw, 1.25rem); margin-bottom: 0.65rem; }
+  .detail-row .label, .detail-row .value { color: var(--maroon); }
+  .detail-row .value { font-weight: 700; }
+  .detail-row .value a { color: var(--maroon); text-decoration: underline; }
+  .day-card p.note { border-top: 1px dashed var(--divider); font-size: 1rem; }
+
+  .reset-row { margin-top: -3rem; }
+  .reset-row button { background: transparent; color: var(--maroon); }
+
+  @media (max-width: 650px) {
+    .wrap { padding: 2.5rem 1.1rem 4rem; }
+    .hero { padding-bottom: 2.5rem; }
+    .day-card {
+      margin-bottom: 2.5rem;
+      border-top-width: 6px;
+      border-radius: 20px;
+    }
+    .day-card.friday .day-content { display: block; }
+    .day-card.friday .day-image { margin-bottom: 2rem; }
+    .day-card .day-image { border-radius: 16px; }
+    .detail-row { gap: 0.35rem; }
+    .detail-row .value { white-space: normal; }
+  }
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -204,7 +365,7 @@
     <p class="tagline">An urban wedding weekend &middot; October 9&ndash;11 &middot; Tulsa, Oklahoma</p>
   </div>
 
-  <p class="welcome">We are so grateful you're here. Type your name below and we'll show you exactly where you fit into the weekend.</p>
+  <p class="welcome">We are so grateful that you are here. You are the people we hold closest. Thank you for celebrating with us and for loving us so well.</p>
 
   <div class="lookup-card">
     <label for="nameInput">What's your name?</label>
@@ -274,7 +435,7 @@ async function loadGuests() {
   }
 }
 
-function dayCard({ title, date, desc, rows, note }) {
+function dayCard({ title, date, desc, rows, note, image, imageAlt, variant = "" }) {
   const rowsHtml = rows.map(r => `
     <div class="detail-row">
       <span class="label">${r.label}</span>
@@ -282,12 +443,18 @@ function dayCard({ title, date, desc, rows, note }) {
       <span class="value">${r.value}</span>
     </div>`).join("");
   return `
-    <div class="day-card">
+    <div class="day-card ${variant}">
       <h2>${title}</h2>
       <p class="date">${date}</p>
-      <p class="desc">${desc}</p>
-      ${rowsHtml}
-      ${note ? `<p class="note">${note}</p>` : ""}
+      <div class="day-content">
+        ${image ? `<img class="day-image" src="${image}" alt="${imageAlt}">` : ""}
+        <p class="desc day-intro">${desc}</p>
+      </div>
+      <div class="details">
+        <h3>Details</h3>
+        ${rowsHtml}
+        ${note ? `<p class="note">${note}</p>` : ""}
+      </div>
     </div>`;
 }
 
@@ -297,8 +464,11 @@ function buildItinerary(role) {
 
   // Friday — everyone
   html += dayCard({
+    variant: "friday",
     title: "Friday &middot; Urban Kickoff",
     date: "October 9 &middot; 7 PM",
+    image: "img/kick-ball-game.png",
+    imageAlt: "Illustrated kickball game announcement",
     desc: "A sunset kickball game to kick off the weekend &mdash; chill, friendly, and a great way to meet everyone before the big day. Light snacks provided. Afterwards, we may wander over to Swirl 66 for custard, so keep an eye out for updates.",
     rows: [
       { label: "Where", value: `<a href="https://maps.google.com/?q=1875+S+Boulder+Park+Dr,+Tulsa,+OK+74119" target="_blank" rel="noopener">1875 S Boulder Park Dr, Tulsa, OK</a>` },
@@ -311,6 +481,8 @@ function buildItinerary(role) {
     html += dayCard({
       title: "Saturday &middot; Rehearsal &amp; Dinner",
       date: "October 10 &middot; starts 4 PM",
+      image: "img/urban-barn.png",
+      imageAlt: "The barn at the rehearsal dinner location",
       desc: "Join us at Jude's parents' home to run through the ceremony, then stay for an Italian dinner with toasts.",
       rows: [
         { label: "Where", value: `<a href="https://maps.google.com/?q=7176+N+Memorial+Dr,+Owasso,+OK+74055" target="_blank" rel="noopener">7176 N Memorial Dr, Owasso, OK</a>` },
@@ -325,6 +497,8 @@ function buildItinerary(role) {
   html += dayCard({
     title: "Saturday &middot; Welcome Party",
     date: "October 10 &middot; 6:30 &ndash; 8:30 PM",
+    image: "img/urban-barn.png",
+    imageAlt: "The barn at the welcome party location",
     desc: "An easy evening with local sourdough and jams, snacks, music, and yard games. Kids are welcome!",
     rows: [
       { label: "Where", value: `<a href="https://maps.google.com/?q=7176+N+Memorial+Dr,+Owasso,+OK+74055" target="_blank" rel="noopener">7176 N Memorial Dr, Owasso, OK</a>` },
@@ -352,6 +526,8 @@ function buildItinerary(role) {
   html += dayCard({
     title: "Sunday &middot; Wedding Day!",
     date: "October 11",
+    image: "img/lakeview-hills.png",
+    imageAlt: "Lakeview Hills wedding venue at sunset",
     desc: fullAccess
       ? "This is the day! It's about an hour east of Tulsa, so plan your drive accordingly. All hands will be on deck to help unload decor when we arrive &mdash; thank you in advance."
       : "This is the day! It's about an hour east of Tulsa, so plan your drive accordingly.",
@@ -367,7 +543,7 @@ function render(guest) {
 
   results.innerHTML = `
     <hr class="rule">
-    <p class="greeting">Hi ${guest.name} 👋</p>
+    <p class="greeting">Hi ${guest.name}</p>
     <p class="greeting-sub">Here's your weekend &mdash; you're joining us as ${label}.</p>
     ${buildItinerary(guest.role)}
     <div class="reset-row"><button id="resetBtn">Look up a different name</button></div>
