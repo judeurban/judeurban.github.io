@@ -339,7 +339,11 @@
     display: flex;
     align-items: baseline;
     gap: 0.6rem;
-    margin-bottom: 0.7rem;
+    margin-bottom: 0.9rem;
+    padding: 0.9rem 1.2rem;
+    border: 1px solid rgba(166, 44, 37, 0.18);
+    border-radius: 14px;
+    background: rgba(252, 244, 227, 0.6);
     color: var(--maroon);
     font-size: clamp(1rem, 2vw, 1.25rem);
   }
@@ -517,8 +521,9 @@
     .overview-row {
       flex-direction: column;
       align-items: flex-start;
-      gap: 0.15rem;
-      margin-bottom: 1.1rem;
+      gap: 0.2rem;
+      margin-bottom: 0.8rem;
+      padding: 0.8rem 1rem;
     }
     .overview-date { white-space: normal; }
     .overview-fill { display: none; }
@@ -1046,13 +1051,18 @@ function daysFromToday(date) {
   return Math.round((target - today) / 86400000);
 }
 
+// Errors in this class describe an expected, guest-friendly reason no forecast
+// exists yet (too far out, or the date has passed) rather than a real failure.
+class ForecastNotReadyError extends Error {}
+
 async function getWeather(zip, date) {
   const cacheKey = `${zip}:${date}`;
   if (WEATHER_CACHE.has(cacheKey)) return WEATHER_CACHE.get(cacheKey);
 
   const daysAway = daysFromToday(date);
-  if (daysAway < 0) throw new Error("Forecasts are no longer available for this date");
-  if (daysAway > 16) throw new Error("Forecast will be available closer to the event date");
+  if (daysAway < 0) throw new ForecastNotReadyError("Forecasts are no longer available for this date");
+  // Open-Meteo's daily forecast covers today (offset 0) through offset 15 (16 days total).
+  if (daysAway > 15) throw new ForecastNotReadyError("Forecast will be available closer to the event date");
 
   const geocodeUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(zip)}&count=1&language=en&format=json`;
   const geocodeResponse = await fetch(geocodeUrl, { cache: "no-store" });
@@ -1104,9 +1114,11 @@ async function hydrateWeather() {
     } catch (error) {
       strip.classList.remove("is-pending");
       strip.classList.add("is-unavailable");
-      strip.textContent = error.message === "Failed to fetch"
-        ? "Forecast unavailable right now. Please check again later."
-        : error.message;
+      // Only expected "not ready yet" reasons get their specific message; any real
+      // failure (network, geocoding, API) shows one consistent, friendly line.
+      strip.textContent = error instanceof ForecastNotReadyError
+        ? error.message
+        : "Forecast unavailable right now. Please check again later.";
     }
   }));
 }
