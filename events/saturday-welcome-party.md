@@ -19,7 +19,7 @@ Join us for an extended Welcome Party. Dinner, local sourdough and jams, music, 
 
 ## Menu
 
-- **Food:** Italian sliders
+- **Food:** Italian sliders, sourdough, and jam
 - **Salad:** Pasta salad
 - **Fruit:** Seasonal fruit
 - **Desserts:** Tiramisu and meringues

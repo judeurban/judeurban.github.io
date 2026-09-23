@@ -12,8 +12,7 @@ weatherZip: 74365
 This is the day! It's about an hour east of Tulsa, so plan your drive accordingly.
 
 <!-- roles: wedding_party -->
-**Wedding Party!!**
-All hands will be on deck to help unload decor when we arrive. Thank you so much for your help!
+**Wedding Party:** all hands will be on deck to help unload decor when we arrive. thank you so much for your help!
 <!-- /roles -->
 
 ## Details

@@ -471,29 +471,37 @@
     gap: 0.6rem;
     background: var(--maroon);
     color: #ffffff;
-    padding: 0.5rem 0.85rem;
-    border-radius: 999px;
+    padding: 0.45rem 0.8rem;
+    border-radius: 12px;
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 0.98rem;
     text-decoration: none;
-    margin-top: 0.5rem;
-    box-shadow: 0 8px 18px rgba(59,17,22,0.12);
+    margin-top: 0.4rem;
+    box-shadow: 0 8px 20px rgba(59,17,22,0.12);
     border: 1px solid rgba(0,0,0,0.06);
+    justify-content: flex-start;
+    white-space: nowrap;
   }
   .add-ical .ical-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.45rem;
-    height: 1.45rem;
-    background: rgba(255,255,255,0.12);
-    color: #fff;
+    width: 2rem;
+    height: 2rem;
+    background: #ffffff;
+    color: var(--maroon);
     border-radius: 6px;
-    font-size: 0.95rem;
+    flex: 0 0 auto;
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.03);
   }
+  .add-ical .ical-label { color: #ffffff; margin-left: 0.25rem; }
   .add-ical:hover { background: var(--maroon-2); color: #fff; }
   .add-ical:focus { outline: 3px solid rgba(166,44,37,0.16); outline-offset: 3px; }
   .ical-sub-block h4 { margin-bottom: 0.4rem; }
+  @media (max-width: 520px) {
+    .add-ical { width: 100%; min-width: 0; padding-left: 1rem; padding-right: 1rem; }
+    .ical-sub-block { display: flex; }
+  }
 
   .reset-row { margin-top: -3rem; }
   .reset-row button { background: transparent; color: var(--maroon); }
@@ -668,10 +676,10 @@ function stripTags(html) {
 }
 
 function pad(n, width=2) { return String(n).padStart(width, "0"); }
-
 function formatIcsDate(dateIso, timeStr) {
-  // dateIso: YYYY-MM-DD, timeStr: e.g. "6:30 PM"
-  const datePart = dateIso || "";
+  // Return a wall-clock local timestamp YYYYMMDDTHHMMSS (no timezone marker)
+  // We'll emit DTSTART/DTEND with TZID=America/Chicago so calendar apps interpret as Central Time.
+  if (!dateIso) return null;
   const timeMatch = (timeStr || "").match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM|am|pm)?/);
   let hh = 18, mm = 0; // default 6:00 PM
   if (timeMatch) {
@@ -684,30 +692,44 @@ function formatIcsDate(dateIso, timeStr) {
       if (ap === 'am' && hh === 12) hh = 0;
     }
   }
-  if (!datePart) return null;
-  const d = new Date(`${datePart}T00:00:00`);
+  const d = new Date(`${dateIso}T00:00:00`);
   const YYYY = d.getFullYear();
   const MM = pad(d.getMonth() + 1);
   const DD = pad(d.getDate());
   return `${YYYY}${MM}${DD}T${pad(hh)}${pad(mm)}00`;
 }
 
-function buildIcsString({ uid, dtstamp, dtstart, dtend, summary, location, description }) {
-  return [
+function icsEscape(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/\r\n|\r|\n/g, "\\n")
+    .replace(/([,;\\])/g, "\\$1");
+}
+
+function buildIcsString({ uid, dtstamp, dtstart, dtend, summary, location, description, tzid, url, attach }) {
+  const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//judeurban.github.io//EN',
     'BEGIN:VEVENT',
     `UID:${uid}`,
     `DTSTAMP:${dtstamp}Z`,
-    `DTSTART:${dtstart}`,
-    dtend ? `DTEND:${dtend}` : '',
-    `SUMMARY:${summary}`,
-    location ? `LOCATION:${location}` : '',
-    description ? `DESCRIPTION:${description}` : '',
-    'END:VEVENT',
-    'END:VCALENDAR'
-  ].filter(Boolean).join('\r\n');
+  ];
+  if (dtstart) {
+    if (tzid) lines.push(`DTSTART;TZID=${tzid}:${dtstart}`);
+    else lines.push(`DTSTART:${dtstart}`);
+  }
+  if (dtend) {
+    if (tzid) lines.push(`DTEND;TZID=${tzid}:${dtend}`);
+    else lines.push(`DTEND:${dtend}`);
+  }
+  if (summary) lines.push(`SUMMARY:${icsEscape(summary)}`);
+  if (location) lines.push(`LOCATION:${icsEscape(location)}`);
+  if (description) lines.push(`DESCRIPTION:${description}`);
+  if (url) lines.push(`URL:${url}`);
+  if (attach) lines.push(`ATTACH;FMTTYPE=image/jpeg:${attach}`);
+  lines.push('END:VEVENT', 'END:VCALENDAR');
+  return lines.join('\r\n');
 }
 
 function setupIcalLinks() {
@@ -718,22 +740,45 @@ function setupIcalLinks() {
       const start = a.dataset.start || '';
       const end = a.dataset.end || '';
       const location = a.dataset.location || '';
+      const description = decodeURIComponent(a.dataset.description || '');
+      const attach = a.dataset.attach || '';
 
-      const dtstart = formatIcsDate(dateIso, start) || null;
+      let dtstart = formatIcsDate(dateIso, start) || null;
       let dtend = formatIcsDate(dateIso, end) || null;
+
+      // If there's no explicit start time but we have a date, default to 6:00 PM local
+      if (!dtstart && dateIso) {
+        dtstart = formatIcsDate(dateIso, '6:00 PM');
+      }
+
+      // Ensure there's always an end time: default to 2 hours after the start (wall-clock)
       if (!dtend && dtstart) {
-        // default: +2 hours
-        const y = dtstart.slice(0,4); const mo = dtstart.slice(4,6); const d = dtstart.slice(6,8);
-        const hh = parseInt(dtstart.slice(9,11),10); const mm = parseInt(dtstart.slice(11,13),10);
-        const dt = new Date(`${y}-${mo}-${d}T${pad(hh)}:${pad(mm)}:00`);
-        dt.setHours(dt.getHours() + 2);
-        dtend = `${dt.getFullYear()}${pad(dt.getMonth()+1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+        // default: +2 hours (compute in wall-clock terms, then normalize date rollover)
+        const y = parseInt(dtstart.slice(0,4),10);
+        let mo = parseInt(dtstart.slice(4,6),10);
+        let day = parseInt(dtstart.slice(6,8),10);
+        let hh = parseInt(dtstart.slice(9,11),10);
+        const mm = parseInt(dtstart.slice(11,13),10);
+        hh += 2;
+        if (hh >= 24) {
+          hh -= 24;
+          day += 1;
+          // normalize month/year
+          const norm = new Date(y, mo - 1, day);
+          // read normalized components
+          const ny = norm.getFullYear();
+          const nmo = norm.getMonth() + 1;
+          const nd = norm.getDate();
+          dtend = `${ny}${pad(nmo)}${pad(nd)}T${pad(hh)}${pad(mm)}00`;
+        } else {
+          dtend = `${y}${pad(mo)}${pad(day)}T${pad(hh)}${pad(mm)}00`;
+        }
       }
 
       const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}@judeurban.github.io`;
       const now = new Date();
       const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth()+1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}`;
-      const ics = buildIcsString({ uid, dtstamp, dtstart, dtend, summary: title, location, description: '' });
+      const ics = buildIcsString({ uid, dtstamp, dtstart, dtend, summary: title, location, description: icsEscape(description), tzid: 'America/Chicago', url: document.baseURI, attach });
       const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       a.href = url;
@@ -995,9 +1040,49 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
     const found = rows.find(r => r.label && r.label.toLowerCase().startsWith(label));
     return found ? stripTags(found.value) : "";
   };
-  const startsText = findRow('starts');
-  const endsText = findRow('ends');
+  // Try multiple labels for start/end times; metadata `date` may also include times
+  const startsTextCandidate = (labels) => {
+    for (const l of labels) {
+      const v = findRow(l);
+      if (v) return v;
+    }
+    return "";
+  };
+  // parse times from metadata `date` string when available (e.g. "Oct 10, 2026 · 6:30 – 8:30 PM")
+  const parseTimesFromDateMeta = (metaDate) => {
+    if (!metaDate) return { start: "", end: "" };
+    // look for range with en-dash or hyphen; capture optional AM/PM for each side
+    const rangeMatch = metaDate.match(/(\d{1,2}(?::\d{2})?)(?:\s*(AM|PM|am|pm))?\s*[–—-\-]\s*(\d{1,2}(?::\d{2})?)(?:\s*(AM|PM|am|pm))?/);
+    if (rangeMatch) {
+      let startRaw = rangeMatch[1].trim();
+      const startAmpm = rangeMatch[2];
+      let endRaw = rangeMatch[3].trim();
+      const endAmpm = rangeMatch[4];
+      // If start lacks AM/PM but end has one, assume same AM/PM for start
+      if (!startAmpm && endAmpm) startRaw = `${startRaw} ${endAmpm}`;
+      else if (startAmpm) startRaw = `${startRaw} ${startAmpm}`;
+      if (endAmpm) endRaw = `${endRaw} ${endAmpm}`;
+      return { start: startRaw.trim(), end: endRaw.trim() };
+    }
+    // look for single time with AM/PM
+    const singleMatch = metaDate.match(/(\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm))/);
+    if (singleMatch) return { start: singleMatch[1].trim(), end: "" };
+    // look for "starts 4 PM" patterns
+    const startsMatch = metaDate.match(/starts?\s+(\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm)?)/i);
+    if (startsMatch) return { start: startsMatch[1].trim(), end: "" };
+    return { start: "", end: "" };
+  };
+
+  const metaTimes = parseTimesFromDateMeta(date || "");
+  const startsText = metaTimes.start || startsTextCandidate(['arrive', 'starts', 'when', 'rehearsal', 'start']) || "";
+  const endsText = metaTimes.end || startsTextCandidate(['ends', 'ends:', 'dinner', 'ceremony', 'end']) || "";
   const whereText = findRow('where');
+  // extract image src for attach if present
+  const imageSrcMatch = imageHtml.match(/src=["']([^"']+)["']/);
+  const attachUrl = imageSrcMatch ? new URL(imageSrcMatch[1], document.baseURI).href : "";
+  // build a reasonable description: intro + rows + note
+  const rowsText = rows.map(r => `${r.label}: ${stripTags(r.value)}`).join("\\n");
+  const descriptionText = `${stripTags(textHtml)}${rowsText ? "\\n\\n" + rowsText : ""}${noteHtml ? "\\n\\n" + stripTags(noteHtml) : ""}`;
 
   const rowsHtml = rows.map(r => `
     <div class="detail-row">
@@ -1005,6 +1090,7 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
       <span class="fill"></span>
       <span class="value">${r.value}</span>
     </div>`).join("");
+  const buttonLabel = escapeHtml(title).replace(/\s*·\s*/g, ' — ');
   return `
     <div class="day-card ${variant}">
       <h2>${escapeHtml(title).replace(/\s*·\s*/g, '<br>')}</h2>
@@ -1031,7 +1117,18 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
             data-start="${escapeHtml(startsText)}"
             data-end="${escapeHtml(endsText)}"
             data-location="${escapeHtml(whereText)}"
-          ><span class="ical-icon" aria-hidden="true">📅</span><span class="ical-label">Save to calendar</span></a>
+            data-description="${encodeURIComponent(descriptionText)}"
+            data-attach="${escapeHtml(attachUrl)}"
+          >
+            <span class="ical-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <path d="M7 3v2M17 3v2M3 8h18M5 21h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                <rect x="8.5" y="11" width="2" height="2" rx="0.3" fill="currentColor" />
+                <rect x="12.5" y="11" width="2" height="2" rx="0.3" fill="currentColor" />
+              </svg>
+            </span>
+            <span class="ical-label">${escapeHtml(title).replace(/\s*·\s*/g, ' — ')}</span>
+          </a>
         </div>
         ${noteHtml ? `<div class="note">${noteHtml}</div>` : ""}
       </div>
