@@ -788,6 +788,134 @@ function setupIcalLinks() {
     }
   });
 }
+// ---- Jeff Phillips binary easter-egg ----------------------------------
+// Triggers when the looked-up guest name normalizes to "jeff phillips".
+function enableBinaryEasterEgg() {
+  if (window.__binaryEgg && window.__binaryEgg.active) return;
+  window.__binaryEgg = { active: true, nodes: [], canvas: null, raf: null, exitBtn: null, _onKey: null, _onResize: null };
+
+  // Walk text nodes (skip script/style/textarea/input/select) and replace with 8-bit ASCII binary
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      const parent = node.parentNode && node.parentNode.nodeName;
+      if (['SCRIPT','STYLE','NOSCRIPT','TEXTAREA','INPUT','SELECT'].includes(parent)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  textNodes.forEach(n => {
+    n._origText = n.nodeValue;
+    n.nodeValue = Array.from(n._origText).map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join(' ');
+  });
+  window.__binaryEgg.nodes = textNodes;
+
+  // Apply page-level styling for the effect
+  document.documentElement.style.backgroundColor = '#001100';
+  document.body.style.color = '#00ff66';
+  document.body.style.fontFamily = 'monospace';
+
+  // Create a full-screen canvas to render falling binary (Matrix-style)
+  const canvas = document.createElement('canvas');
+  canvas.id = '__matrixCanvas';
+  canvas.style.position = 'fixed';
+  canvas.style.top = 0;
+  canvas.style.left = 0;
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  canvas.style.zIndex = 99999;
+  canvas.style.pointerEvents = 'none';
+  document.documentElement.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  let fontSize = Math.max(12, Math.floor((window.innerWidth || 800) / 120));
+  let columns = 0;
+  let drops = [];
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    fontSize = Math.max(12, Math.floor((window.innerWidth || 800) / 120));
+    columns = Math.floor(canvas.width / fontSize) + 1;
+    drops = Array.from({ length: columns }, () => Math.random() * canvas.height / fontSize);
+    ctx.font = `${fontSize}px monospace`;
+  }
+
+  function draw() {
+    // translucent black for trail effect
+    ctx.fillStyle = 'rgba(0,16,4,0.06)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00ff66';
+    ctx.font = `${fontSize}px monospace`;
+    for (let i = 0; i < columns; i++) {
+      const text = Math.random() > 0.5 ? '1' : '0';
+      const x = i * fontSize;
+      const y = drops[i] * fontSize;
+      ctx.fillText(text, x, y);
+      drops[i] = (drops[i] + Math.random() * 0.9 + 0.4);
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    }
+    window.__binaryEgg.raf = requestAnimationFrame(draw);
+  }
+
+  window.__binaryEgg._onResize = resizeCanvas;
+  window.addEventListener('resize', window.__binaryEgg._onResize);
+  resizeCanvas();
+  draw();
+  window.__binaryEgg.canvas = canvas;
+
+  // Add a small Exit button so Jeff can revert
+  const btn = document.createElement('button');
+  btn.id = '__matrixExitBtn';
+  btn.textContent = 'Exit Matrix';
+  btn.style.position = 'fixed';
+  btn.style.right = '12px';
+  btn.style.top = '12px';
+  btn.style.zIndex = 100000;
+  btn.style.background = 'transparent';
+  btn.style.color = '#00ff66';
+  btn.style.border = '1px solid rgba(0,255,102,0.12)';
+  btn.style.padding = '6px 8px';
+  btn.style.fontFamily = 'monospace';
+  btn.style.cursor = 'pointer';
+  btn.addEventListener('click', disableBinaryEasterEgg);
+  document.body.appendChild(btn);
+  window.__binaryEgg.exitBtn = btn;
+
+  window.__binaryEgg._onKey = (e) => { if (e.key === 'Escape') disableBinaryEasterEgg(); };
+  document.addEventListener('keydown', window.__binaryEgg._onKey);
+}
+
+function disableBinaryEasterEgg() {
+  const state = window.__binaryEgg;
+  if (!state) return;
+  // restore text nodes
+  (state.nodes || []).forEach(n => {
+    if (n && n._origText !== undefined) {
+      n.nodeValue = n._origText;
+      delete n._origText;
+    }
+  });
+  // remove canvas and controls
+  if (state.raf) cancelAnimationFrame(state.raf);
+  if (state.canvas && state.canvas.parentNode) state.canvas.parentNode.removeChild(state.canvas);
+  if (state.exitBtn && state.exitBtn.parentNode) state.exitBtn.parentNode.removeChild(state.exitBtn);
+  if (state._onResize) window.removeEventListener('resize', state._onResize);
+  if (state._onKey) document.removeEventListener('keydown', state._onKey);
+  // revert styles
+  document.documentElement.style.backgroundColor = '';
+  document.body.style.color = '';
+  document.body.style.fontFamily = '';
+  window.__binaryEgg = { active: false };
+}
+
+function isJeffPhillipsName(name) {
+  return (name || '').trim().toLowerCase() === 'jeff phillips';
+}
+
+// -----------------------------------------------------------------------
 
 const WEATHER_CACHE = new Map();
 
@@ -1213,6 +1341,15 @@ function findGuest() {
     feedback.textContent = "";
     feedback.classList.remove("notfound");
     render(match);
+    // Easter-egg: if this guest is Jeff Phillips, enable the binary/Matrix effect
+    try {
+      if (isJeffPhillipsName(match.name)) {
+        // small delay to let the page render before transforming text
+        setTimeout(() => { enableBinaryEasterEgg(); }, 300);
+      }
+    } catch (e) {
+      // noop — do not break guest rendering
+    }
   } else {
     feedback.textContent = "We couldn't find that name on the list — double check the spelling, or reach out to Jessie or Jude directly.";
     feedback.classList.add("notfound");
