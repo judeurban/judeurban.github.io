@@ -351,6 +351,7 @@
     margin-bottom: 0.3rem;
   }
   .overview-title { white-space: nowrap; font-weight: 700; }
+  .overview-actions { margin-top: 1.5rem; display: flex; justify-content: center; }
 
   .day-card {
     max-width: 940px;
@@ -497,10 +498,8 @@
   .add-ical .ical-label { color: #ffffff; margin-left: 0.25rem; }
   .add-ical:hover { background: var(--maroon-2); color: #fff; }
   .add-ical:focus { outline: 3px solid rgba(166,44,37,0.16); outline-offset: 3px; }
-  .ical-sub-block h4 { margin-bottom: 0.4rem; }
   @media (max-width: 520px) {
     .add-ical { width: 100%; min-width: 0; padding-left: 1rem; padding-right: 1rem; }
-    .ical-sub-block { display: flex; }
   }
 
   .reset-row { margin-top: -3rem; }
@@ -706,87 +705,127 @@ function icsEscape(text) {
     .replace(/([,;\\])/g, "\\$1");
 }
 
-function buildIcsString({ uid, dtstamp, dtstart, dtend, summary, location, description, tzid, url, attach }) {
-  const lines = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//judeurban.github.io//EN',
-    'BEGIN:VEVENT',
-    `UID:${uid}`,
-    `DTSTAMP:${dtstamp}Z`,
-  ];
-  if (dtstart) {
-    if (tzid) lines.push(`DTSTART;TZID=${tzid}:${dtstart}`);
-    else lines.push(`DTSTART:${dtstart}`);
+// Given a wall-clock start timestamp YYYYMMDDTHHMMSS, return one 2 hours later (with date rollover).
+function addTwoHours(dtstart) {
+  const y = parseInt(dtstart.slice(0,4),10);
+  let mo = parseInt(dtstart.slice(4,6),10);
+  let day = parseInt(dtstart.slice(6,8),10);
+  let hh = parseInt(dtstart.slice(9,11),10);
+  const mm = parseInt(dtstart.slice(11,13),10);
+  hh += 2;
+  if (hh >= 24) {
+    hh -= 24;
+    day += 1;
+    const norm = new Date(y, mo - 1, day);
+    return `${norm.getFullYear()}${pad(norm.getMonth() + 1)}${pad(norm.getDate())}T${pad(hh)}${pad(mm)}00`;
   }
-  if (dtend) {
-    if (tzid) lines.push(`DTEND;TZID=${tzid}:${dtend}`);
-    else lines.push(`DTEND:${dtend}`);
-  }
-  if (summary) lines.push(`SUMMARY:${icsEscape(summary)}`);
-  if (location) lines.push(`LOCATION:${icsEscape(location)}`);
-  if (description) lines.push(`DESCRIPTION:${description}`);
-  if (url) lines.push(`URL:${url}`);
-  if (attach) lines.push(`ATTACH;FMTTYPE=image/jpeg:${attach}`);
-  lines.push('END:VEVENT', 'END:VCALENDAR');
+  return `${y}${pad(mo)}${pad(day)}T${pad(hh)}${pad(mm)}00`;
+}
+
+// Resolve dtstart/dtend wall-clock timestamps for an event, applying the same
+// defaults used for single-event export (6:00 PM start, +2 hour end).
+function resolveEventTimes({ dateIso, start, end }) {
+  let dtstart = formatIcsDate(dateIso, start) || null;
+  let dtend = formatIcsDate(dateIso, end) || null;
+  if (!dtstart && dateIso) dtstart = formatIcsDate(dateIso, '6:00 PM');
+  if (!dtend && dtstart) dtend = addTwoHours(dtstart);
+  return { dtstart, dtend };
+}
+
+// Extract the fields needed to export a calendar event from a rendered day's event data.
+function computeEventIcsFields(event) {
+  const { title, date, rows, weatherDate, introHtml, noteHtml } = event;
+  const imageMatch = introHtml.match(/<img class="day-image"[^>]+>/);
+  const imageHtml = imageMatch ? imageMatch[0] : "";
+  const textHtml = imageHtml ? introHtml.replace(imageHtml, "") : introHtml;
+
+  const findRow = label => {
+    const found = rows.find(r => r.label && r.label.toLowerCase().startsWith(label));
+    return found ? stripTags(found.value) : "";
+  };
+  const startsTextCandidate = (labels) => {
+    for (const l of labels) {
+      const v = findRow(l);
+      if (v) return v;
+    }
+    return "";
+  };
+  const parseTimesFromDateMeta = (metaDate) => {
+    if (!metaDate) return { start: "", end: "" };
+    const rangeMatch = metaDate.match(/(\d{1,2}(?::\d{2})?)(?:\s*(AM|PM|am|pm))?\s*[–—\-]\s*(\d{1,2}(?::\d{2})?)(?:\s*(AM|PM|am|pm))?/);
+    if (rangeMatch) {
+      let startRaw = rangeMatch[1].trim();
+      const startAmpm = rangeMatch[2];
+      let endRaw = rangeMatch[3].trim();
+      const endAmpm = rangeMatch[4];
+      if (!startAmpm && endAmpm) startRaw = `${startRaw} ${endAmpm}`;
+      else if (startAmpm) startRaw = `${startRaw} ${startAmpm}`;
+      if (endAmpm) endRaw = `${endRaw} ${endAmpm}`;
+      return { start: startRaw.trim(), end: endRaw.trim() };
+    }
+    const singleMatch = metaDate.match(/(\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm))/);
+    if (singleMatch) return { start: singleMatch[1].trim(), end: "" };
+    const startsMatch = metaDate.match(/starts?\s+(\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm)?)/i);
+    if (startsMatch) return { start: startsMatch[1].trim(), end: "" };
+    return { start: "", end: "" };
+  };
+
+  const metaTimes = parseTimesFromDateMeta(date || "");
+  const startsText = metaTimes.start || startsTextCandidate(['arrive', 'starts', 'when', 'rehearsal', 'start']) || "";
+  const endsText = metaTimes.end || startsTextCandidate(['ends', 'ends:', 'dinner', 'ceremony', 'end']) || "";
+  const whereText = findRow('where');
+  const imageSrcMatch = imageHtml.match(/src=["']([^"']+)["']/);
+  const attachUrl = imageSrcMatch ? new URL(imageSrcMatch[1], document.baseURI).href : "";
+  const rowsText = rows.map(r => `${r.label}: ${stripTags(r.value)}`).join("\\n");
+  const descriptionText = `${stripTags(textHtml)}${rowsText ? "\\n\\n" + rowsText : ""}${noteHtml ? "\\n\\n" + stripTags(noteHtml) : ""}`;
+
+  return {
+    title,
+    dateIso: weatherDate || "",
+    start: startsText,
+    end: endsText,
+    location: whereText,
+    description: descriptionText,
+    attach: attachUrl,
+  };
+}
+
+// Build one VCALENDAR containing a VEVENT for every event the guest has access to.
+function buildMultiIcsString(events) {
+  const now = new Date();
+  const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth()+1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}`;
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//judeurban.github.io//EN'];
+  events.forEach((event, index) => {
+    const { dtstart, dtend } = resolveEventTimes(event);
+    const uid = `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}@judeurban.github.io`;
+    lines.push('BEGIN:VEVENT', `UID:${uid}`, `DTSTAMP:${dtstamp}Z`);
+    if (dtstart) lines.push(`DTSTART;TZID=America/Chicago:${dtstart}`);
+    if (dtend) lines.push(`DTEND;TZID=America/Chicago:${dtend}`);
+    if (event.title) lines.push(`SUMMARY:${icsEscape(event.title)}`);
+    if (event.location) lines.push(`LOCATION:${icsEscape(event.location)}`);
+    if (event.description) lines.push(`DESCRIPTION:${icsEscape(event.description)}`);
+    lines.push(`URL:${document.baseURI}`);
+    if (event.attach) lines.push(`ATTACH;FMTTYPE=image/jpeg:${event.attach}`);
+    lines.push('END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
   return lines.join('\r\n');
 }
 
-function setupIcalLinks() {
-  document.querySelectorAll('.add-ical').forEach(a => {
-    try {
-      const title = a.dataset.title || '';
-      const dateIso = a.dataset.date || '';
-      const start = a.dataset.start || '';
-      const end = a.dataset.end || '';
-      const location = a.dataset.location || '';
-      const description = decodeURIComponent(a.dataset.description || '');
-      const attach = a.dataset.attach || '';
-
-      let dtstart = formatIcsDate(dateIso, start) || null;
-      let dtend = formatIcsDate(dateIso, end) || null;
-
-      // If there's no explicit start time but we have a date, default to 6:00 PM local
-      if (!dtstart && dateIso) {
-        dtstart = formatIcsDate(dateIso, '6:00 PM');
-      }
-
-      // Ensure there's always an end time: default to 2 hours after the start (wall-clock)
-      if (!dtend && dtstart) {
-        // default: +2 hours (compute in wall-clock terms, then normalize date rollover)
-        const y = parseInt(dtstart.slice(0,4),10);
-        let mo = parseInt(dtstart.slice(4,6),10);
-        let day = parseInt(dtstart.slice(6,8),10);
-        let hh = parseInt(dtstart.slice(9,11),10);
-        const mm = parseInt(dtstart.slice(11,13),10);
-        hh += 2;
-        if (hh >= 24) {
-          hh -= 24;
-          day += 1;
-          // normalize month/year
-          const norm = new Date(y, mo - 1, day);
-          // read normalized components
-          const ny = norm.getFullYear();
-          const nmo = norm.getMonth() + 1;
-          const nd = norm.getDate();
-          dtend = `${ny}${pad(nmo)}${pad(nd)}T${pad(hh)}${pad(mm)}00`;
-        } else {
-          dtend = `${y}${pad(mo)}${pad(day)}T${pad(hh)}${pad(mm)}00`;
-        }
-      }
-
-      const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}@judeurban.github.io`;
-      const now = new Date();
-      const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth()+1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}`;
-      const ics = buildIcsString({ uid, dtstamp, dtstart, dtend, summary: title, location, description: icsEscape(description), tzid: 'America/Chicago', url: document.baseURI, attach });
-      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      a.href = url;
-      a.setAttribute('download', `${title.replace(/[^a-z0-9 _-]/ig,'') || 'event'}.ics`);
-    } catch (e) {
-      // noop
-    }
-  });
+function setupIcalButton(guestName) {
+  const a = document.querySelector('.add-ical-all');
+  if (!a) return;
+  try {
+    const events = JSON.parse(decodeURIComponent(a.dataset.events || '[]'));
+    const ics = buildMultiIcsString(events);
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    const slug = (guestName || '').trim().replace(/[^a-z0-9]+/ig, '-').replace(/^-+|-+$/g, '');
+    a.setAttribute('download', `wedding-weekend${slug ? `-${slug}` : ''}.ics`);
+  } catch (e) {
+    // noop
+  }
 }
 // ---- Jeff Phillips binary easter-egg ----------------------------------
 // Triggers when the looked-up guest name normalizes to "jeff phillips".
@@ -1163,54 +1202,6 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
   const imageMatch = introHtml.match(/<img class="day-image"[^>]+>/);
   const imageHtml = imageMatch ? imageMatch[0] : "";
   const textHtml = imageHtml ? introHtml.replace(imageHtml, "") : introHtml;
-  // derive helpful fields for calendar export
-  const findRow = label => {
-    const found = rows.find(r => r.label && r.label.toLowerCase().startsWith(label));
-    return found ? stripTags(found.value) : "";
-  };
-  // Try multiple labels for start/end times; metadata `date` may also include times
-  const startsTextCandidate = (labels) => {
-    for (const l of labels) {
-      const v = findRow(l);
-      if (v) return v;
-    }
-    return "";
-  };
-  // parse times from metadata `date` string when available (e.g. "Oct 10, 2026 · 6:30 – 8:30 PM")
-  const parseTimesFromDateMeta = (metaDate) => {
-    if (!metaDate) return { start: "", end: "" };
-    // look for range with en-dash, em-dash, or hyphen; capture optional AM/PM for each side
-    const rangeMatch = metaDate.match(/(\d{1,2}(?::\d{2})?)(?:\s*(AM|PM|am|pm))?\s*[–—\-]\s*(\d{1,2}(?::\d{2})?)(?:\s*(AM|PM|am|pm))?/);
-    if (rangeMatch) {
-      let startRaw = rangeMatch[1].trim();
-      const startAmpm = rangeMatch[2];
-      let endRaw = rangeMatch[3].trim();
-      const endAmpm = rangeMatch[4];
-      // If start lacks AM/PM but end has one, assume same AM/PM for start
-      if (!startAmpm && endAmpm) startRaw = `${startRaw} ${endAmpm}`;
-      else if (startAmpm) startRaw = `${startRaw} ${startAmpm}`;
-      if (endAmpm) endRaw = `${endRaw} ${endAmpm}`;
-      return { start: startRaw.trim(), end: endRaw.trim() };
-    }
-    // look for single time with AM/PM
-    const singleMatch = metaDate.match(/(\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm))/);
-    if (singleMatch) return { start: singleMatch[1].trim(), end: "" };
-    // look for "starts 4 PM" patterns
-    const startsMatch = metaDate.match(/starts?\s+(\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm)?)/i);
-    if (startsMatch) return { start: startsMatch[1].trim(), end: "" };
-    return { start: "", end: "" };
-  };
-
-  const metaTimes = parseTimesFromDateMeta(date || "");
-  const startsText = metaTimes.start || startsTextCandidate(['arrive', 'starts', 'when', 'rehearsal', 'start']) || "";
-  const endsText = metaTimes.end || startsTextCandidate(['ends', 'ends:', 'dinner', 'ceremony', 'end']) || "";
-  const whereText = findRow('where');
-  // extract image src for attach if present
-  const imageSrcMatch = imageHtml.match(/src=["']([^"']+)["']/);
-  const attachUrl = imageSrcMatch ? new URL(imageSrcMatch[1], document.baseURI).href : "";
-  // build a reasonable description: intro + rows + note
-  const rowsText = rows.map(r => `${r.label}: ${stripTags(r.value)}`).join("\\n");
-  const descriptionText = `${stripTags(textHtml)}${rowsText ? "\\n\\n" + rowsText : ""}${noteHtml ? "\\n\\n" + stripTags(noteHtml) : ""}`;
 
   const rowsHtml = rows.map(r => `
     <div class="detail-row">
@@ -1218,7 +1209,6 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
       <span class="fill"></span>
       <span class="value">${r.value}</span>
     </div>`).join("");
-  const buttonLabel = escapeHtml(title).replace(/\s*·\s*/g, ' — ');
   return `
     <div class="day-card ${variant}">
       <h2>${escapeHtml(title).replace(/\s*·\s*/g, '<br>')}</h2>
@@ -1234,29 +1224,6 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
         <div class="weather-sub-block">
           <h4>Forecast</h4>
           ${weatherMarkup({ weatherDate, weatherZip })}
-        </div>
-        <div class="ical-sub-block">
-          <h4>Save event</h4>
-          <a class="add-ical" href="#"
-            role="button"
-            aria-label="Save event to calendar: ${escapeHtml(title)}"
-            data-title="${escapeHtml(title)}"
-            data-date="${escapeHtml(weatherDate || '')}"
-            data-start="${escapeHtml(startsText)}"
-            data-end="${escapeHtml(endsText)}"
-            data-location="${escapeHtml(whereText)}"
-            data-description="${encodeURIComponent(descriptionText)}"
-            data-attach="${escapeHtml(attachUrl)}"
-          >
-            <span class="ical-icon" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <path d="M7 3v2M17 3v2M3 8h18M5 21h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-                <rect x="8.5" y="11" width="2" height="2" rx="0.3" fill="currentColor" />
-                <rect x="12.5" y="11" width="2" height="2" rx="0.3" fill="currentColor" />
-              </svg>
-            </span>
-            <span class="ical-label">${escapeHtml(title).replace(/\s*·\s*/g, ' — ')}</span>
-          </a>
         </div>
         ${noteHtml ? `<div class="note">${noteHtml}</div>` : ""}
       </div>
@@ -1281,9 +1248,11 @@ function buildItinerary(role) {
 }
 
 function buildOverview(role) {
-  const rows = EVENTS
+  const events = EVENTS
     .map(event => markdownEvent(event.text, role, event.file))
-    .filter(Boolean)
+    .filter(Boolean);
+
+  const rows = events
     .map(event => `
       <div class="overview-row">
         <span class="overview-date"><strong>${escapeHtml(event.overviewDay)}</strong>, ${escapeHtml(event.overviewDate)}</span>
@@ -1292,10 +1261,28 @@ function buildOverview(role) {
       </div>`)
     .join("");
 
+  const allEventsData = encodeURIComponent(JSON.stringify(events.map(computeEventIcsFields)));
+
   return `
     <section class="overview" aria-labelledby="overview-title">
       <h2 id="overview-title">Overview</h2>
       ${rows}
+      <div class="overview-actions">
+        <a class="add-ical add-ical-all" href="#"
+          role="button"
+          aria-label="Add wedding weekend to calendar"
+          data-events="${allEventsData}"
+        >
+          <span class="ical-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <path d="M7 3v2M17 3v2M3 8h18M5 21h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+              <rect x="8.5" y="11" width="2" height="2" rx="0.3" fill="currentColor" />
+              <rect x="12.5" y="11" width="2" height="2" rx="0.3" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="ical-label">Add Wedding Weekend to Calendar</span>
+        </a>
+      </div>
     </section>`;
 }
 
@@ -1312,7 +1299,7 @@ function render(guest) {
     <div class="reset-row"><button id="resetBtn">Look up a different name</button></div>
   `;
   hydrateWeather();
-  setupIcalLinks();
+  setupIcalButton(guest.name);
   document.getElementById("resetBtn").addEventListener("click", () => {
     results.innerHTML = "";
     document.getElementById("feedback").textContent = "";
