@@ -16,7 +16,7 @@ Join us for an extended Welcome Party with local sourdough and jams, snacks, mus
 - **Where:** [7176 N Memorial Dr, Owasso, OK](https://maps.google.com/?q=7176+N+Memorial+Dr,+Owasso,+OK+74055)
 - **Starts:** 6:30 PM
 - **Ends:** 8:30 PM
-- **Dress code:**
+- **Ends:** Nice, casual, sundresses, cute shirts & shorts, something comfortable for weather and yard games
 
 ## Menu
 

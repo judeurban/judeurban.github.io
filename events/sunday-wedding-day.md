@@ -26,7 +26,7 @@ All hands will be on deck to help unload decor when we arrive — thank you in a
 <!-- /roles -->
 
 <!-- roles: ceremony_party -->
-- **Arrive:** 3 PM
+- **Arrive:** 3:30 PM
 <!-- /roles -->
 
 <!-- roles: friends, out_of_state_family, local_guest, vendor -->
