@@ -1179,8 +1179,8 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
   // parse times from metadata `date` string when available (e.g. "Oct 10, 2026 · 6:30 – 8:30 PM")
   const parseTimesFromDateMeta = (metaDate) => {
     if (!metaDate) return { start: "", end: "" };
-    // look for range with en-dash or hyphen; capture optional AM/PM for each side
-    const rangeMatch = metaDate.match(/(\d{1,2}(?::\d{2})?)(?:\s*(AM|PM|am|pm))?\s*[–—-\-]\s*(\d{1,2}(?::\d{2})?)(?:\s*(AM|PM|am|pm))?/);
+    // look for range with en-dash, em-dash, or hyphen; capture optional AM/PM for each side
+    const rangeMatch = metaDate.match(/(\d{1,2}(?::\d{2})?)(?:\s*(AM|PM|am|pm))?\s*[–—\-]\s*(\d{1,2}(?::\d{2})?)(?:\s*(AM|PM|am|pm))?/);
     if (rangeMatch) {
       let startRaw = rangeMatch[1].trim();
       const startAmpm = rangeMatch[2];
