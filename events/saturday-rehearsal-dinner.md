@@ -17,7 +17,7 @@ Join us at Jude’s parents’ home for the Rehearsal and Gambill’s Italian di
 - **Rehearsal:** 4 PM
 - **Dinner:** 5 PM
 
-This part of the evening is just for the wedding and ceremony party — the Welcome Party picks up right after, and everyone's invited to that.
+This part of the evening is just for the wedding party and their significant others. The Welcome Party picks up right afterwards.
 
 ## Menu
 

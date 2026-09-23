@@ -9,7 +9,7 @@ weatherZip: 74055
 ---
 ![The barn at the welcome party location](../img/urban-barn.png)
 
-Join us for an extended Welcome Party with local sourdough and jams, snacks, music, and yard games. Kids are welcome to join! Cute, casual, sundresses, nice shirts & shorts. Come prepared to play yard games and hang outside!
+Join us for an extended Welcome Party. Dinner, local sourdough and jams, music, and yard games. Kids are welcome to join! Cute, casual, sundresses, nice shirts & shorts. Come prepared to play yard games and hang outside!
 
 ## Details
 
