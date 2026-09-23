@@ -587,6 +587,17 @@ function updateGuestMatches() {
   hint.textContent = matches.length === 0
     ? "No matching names found. Check the spelling and try again."
     : `${matches.length} matching name${matches.length === 1 ? "" : "s"} found. Select yours below.`;
+
+  // If only one matching name, auto-select it and render the results.
+  if (matches.length === 1) {
+    select.value = matches[0].name;
+    select.disabled = false;
+    select.hidden = false;
+    // Trigger the change handler so the Find button is enabled.
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    // Immediately lookup and render the matched guest so the selection is shown.
+    findGuest();
+  }
 }
 
 async function fetchResource(path) {
@@ -870,7 +881,7 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
     </div>`).join("");
   return `
     <div class="day-card ${variant}">
-      <h2>${title}</h2>
+      <h2>${escapeHtml(title).replace(/\s*·\s*/g, '<br>')}</h2>
       <p class="date">${date}</p>
       <div class="day-content">
         ${imageHtml}
