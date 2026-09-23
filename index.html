@@ -480,8 +480,10 @@
     margin-top: 0.4rem;
     box-shadow: 0 8px 20px rgba(59,17,22,0.12);
     border: 1px solid rgba(0,0,0,0.06);
-    justify-content: flex-start;
-    white-space: nowrap;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+    max-width: 100%;
   }
   .add-ical .ical-icon {
     display: inline-flex;
@@ -506,15 +508,21 @@
   .reset-row button { background: transparent; color: var(--maroon); }
 
   @media (max-width: 650px) {
-    .wrap { padding: 2.5rem 1.1rem 4rem; }
+    .wrap { padding: 2.5rem 1.1rem 4rem; overflow-x: hidden; }
     .hero { padding-bottom: 2.5rem; }
     .lookup-row { flex-direction: column; }
     .lookup-row button, input#guestSearch, select#guestSelect { width: 100%; }
     .thank-you-block { border-top-width: 6px; border-radius: 20px; }
     .thank-you-letter { margin-left: 0; }
-    .overview-row { flex-wrap: wrap; }
+    .overview-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.15rem;
+      margin-bottom: 1.1rem;
+    }
     .overview-date { white-space: normal; }
-    .overview-title { margin-left: auto; }
+    .overview-fill { display: none; }
+    .overview-title { margin-left: 0; white-space: normal; }
     .day-card {
       margin-bottom: 2.5rem;
       border-top-width: 6px;
@@ -523,8 +531,38 @@
     .day-card.friday .day-content { display: block; }
     .day-card.friday .day-image { margin-bottom: 2rem; }
     .day-card .day-image { border-radius: 16px; }
-    .detail-row { gap: 0.35rem; }
-    .detail-row .value { white-space: normal; }
+    .detail-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.15rem;
+      margin-bottom: 0.9rem;
+    }
+    .detail-row .label { white-space: normal; }
+    .detail-row .fill { display: none; }
+    .detail-row .value { white-space: normal; text-align: left; }
+  }
+
+  /* Extra scaling for phones so headings never dominate the viewport */
+  @media (max-width: 480px) {
+    .wrap { padding: 2rem 1rem 3rem; }
+    .hero h1 { font-size: clamp(2.6rem, 13vw, 3.6rem); letter-spacing: -0.02em; }
+    .hero h1::after { font-size: clamp(1rem, 5vw, 1.25rem); margin-top: 0.75rem; }
+    .hero p.tagline { font-size: 0.95rem; }
+    .thank-you-block { padding: 1.5rem 1.1rem; }
+    .thank-you-block h2 { font-size: clamp(1.8rem, 9vw, 2.4rem); margin-bottom: 1.25rem; }
+    .thank-you-letter { font-size: 1rem; }
+    .welcome-signoff { font-size: 1.05rem; }
+    .overview { padding: 1.25rem 1rem; }
+    .overview h2 { font-size: clamp(1.8rem, 9vw, 2.4rem); margin-bottom: 1.1rem; }
+    .overview-row { font-size: 0.98rem; }
+    .greeting { font-size: clamp(1.8rem, 10vw, 2.6rem); }
+    .greeting-sub { font-size: 1rem; margin-bottom: 2.5rem; }
+    .day-card { padding: 1.5rem 1.1rem; }
+    .day-card h2 { font-size: clamp(2rem, 11vw, 2.8rem); }
+    .day-card .date { font-size: 1rem; margin-bottom: 1.25rem; }
+    .day-card .day-intro { font-size: 1rem; margin-bottom: 1.5rem; }
+    .details h3 { font-size: clamp(1.6rem, 8vw, 2.2rem); }
+    .detail-row { font-size: 0.98rem; }
   }
 </style>
 </head>
