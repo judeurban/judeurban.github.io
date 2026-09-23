@@ -9,14 +9,13 @@ weatherZip: 74055
 ---
 ![The barn at the rehearsal dinner location](../img/urban-barn.png)
 
-Join us at Jude’s parents’ home for the Rehearsal and Gambill’s Italian dinner with toasts.
+Join us at Jude’s parents’ home for the Rehearsal and Gambill’s Italian dinner with toasts. Cute, casual, sundresses, nice shirts & shorts. Come prepared to play yard games and hang outside!
 
 ## Details
 
 - **Where:** [7176 N Memorial Dr, Owasso, OK](https://maps.google.com/?q=7176+N+Memorial+Dr,+Owasso,+OK+74055)
 - **Rehearsal:** 4 PM
 - **Dinner:** 5 PM
-- **Ends:** Nice, casual, sundresses, cute shirts & shorts, something comfortable for weather and yard games
 
 This part of the evening is just for the wedding and ceremony party — the Welcome Party picks up right after, and everyone's invited to that.
 

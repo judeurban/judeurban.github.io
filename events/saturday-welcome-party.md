@@ -9,14 +9,13 @@ weatherZip: 74055
 ---
 ![The barn at the welcome party location](../img/urban-barn.png)
 
-Join us for an extended Welcome Party with local sourdough and jams, snacks, music, and yard games. Kids are welcome to join!
+Join us for an extended Welcome Party with local sourdough and jams, snacks, music, and yard games. Kids are welcome to join! Cute, casual, sundresses, nice shirts & shorts. Come prepared to play yard games and hang outside!
 
 ## Details
 
 - **Where:** [7176 N Memorial Dr, Owasso, OK](https://maps.google.com/?q=7176+N+Memorial+Dr,+Owasso,+OK+74055)
 - **Starts:** 6:30 PM
 - **Ends:** 8:30 PM
-- **Dress Code:** Casual sundresses, cute shirts & shorts, something comfortable for weather and yard games
 
 ## Menu
 

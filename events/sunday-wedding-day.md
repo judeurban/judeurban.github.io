@@ -12,7 +12,7 @@ weatherZip: 74365
 This is the day! It's about an hour east of Tulsa, so plan your drive accordingly.
 
 <!-- roles: wedding_party -->
-All hands will be on deck to help unload decor when we arrive — thank you in advance.
+All hands will be on deck to help unload decor when we arrive. Thank you so much for your help!
 <!-- /roles -->
 
 ## Details
@@ -29,7 +29,7 @@ All hands will be on deck to help unload decor when we arrive — thank you in a
 - **Arrive:** 3:30 PM
 <!-- /roles -->
 
-<!-- roles: friends, out_of_state_family, local_guest, vendor -->
+<!-- roles: friends, out_of_state_family, local_guest -->
 - **Arrive:** 4:30 PM
 <!-- /roles -->
 
