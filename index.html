@@ -459,6 +459,42 @@
   .detail-row .value a { color: var(--maroon); text-decoration: underline; }
   .day-card p.note { border-top: 1px dashed var(--divider); font-size: 1rem; }
 
+  /* Thematic link styles to replace default blue links */
+  a { color: var(--maroon); text-decoration: none; }
+  a:hover, a:focus { text-decoration: underline; color: var(--maroon-2); }
+  .day-intro a, .menu-sub-block a, .details a, .overview a { color: var(--maroon); text-decoration: none; }
+
+  /* Unified pill-style calendar button */
+  .add-ical {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--maroon);
+    color: #ffffff;
+    padding: 0.5rem 0.85rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    margin-top: 0.5rem;
+    box-shadow: 0 8px 18px rgba(59,17,22,0.12);
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .add-ical .ical-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.45rem;
+    height: 1.45rem;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+  .add-ical:hover { background: var(--maroon-2); color: #fff; }
+  .add-ical:focus { outline: 3px solid rgba(166,44,37,0.16); outline-offset: 3px; }
+  .ical-sub-block h4 { margin-bottom: 0.4rem; }
+
   .reset-row { margin-top: -3rem; }
   .reset-row button { background: transparent; color: var(--maroon); }
 
@@ -625,6 +661,87 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#39;",
   }[character]));
+}
+
+function stripTags(html) {
+  return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function pad(n, width=2) { return String(n).padStart(width, "0"); }
+
+function formatIcsDate(dateIso, timeStr) {
+  // dateIso: YYYY-MM-DD, timeStr: e.g. "6:30 PM"
+  const datePart = dateIso || "";
+  const timeMatch = (timeStr || "").match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM|am|pm)?/);
+  let hh = 18, mm = 0; // default 6:00 PM
+  if (timeMatch) {
+    hh = parseInt(timeMatch[1], 10);
+    mm = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+    const ampm = timeMatch[3];
+    if (ampm) {
+      const ap = ampm.toLowerCase();
+      if (ap === 'pm' && hh !== 12) hh += 12;
+      if (ap === 'am' && hh === 12) hh = 0;
+    }
+  }
+  if (!datePart) return null;
+  const d = new Date(`${datePart}T00:00:00`);
+  const YYYY = d.getFullYear();
+  const MM = pad(d.getMonth() + 1);
+  const DD = pad(d.getDate());
+  return `${YYYY}${MM}${DD}T${pad(hh)}${pad(mm)}00`;
+}
+
+function buildIcsString({ uid, dtstamp, dtstart, dtend, summary, location, description }) {
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//judeurban.github.io//EN',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${dtstamp}Z`,
+    `DTSTART:${dtstart}`,
+    dtend ? `DTEND:${dtend}` : '',
+    `SUMMARY:${summary}`,
+    location ? `LOCATION:${location}` : '',
+    description ? `DESCRIPTION:${description}` : '',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].filter(Boolean).join('\r\n');
+}
+
+function setupIcalLinks() {
+  document.querySelectorAll('.add-ical').forEach(a => {
+    try {
+      const title = a.dataset.title || '';
+      const dateIso = a.dataset.date || '';
+      const start = a.dataset.start || '';
+      const end = a.dataset.end || '';
+      const location = a.dataset.location || '';
+
+      const dtstart = formatIcsDate(dateIso, start) || null;
+      let dtend = formatIcsDate(dateIso, end) || null;
+      if (!dtend && dtstart) {
+        // default: +2 hours
+        const y = dtstart.slice(0,4); const mo = dtstart.slice(4,6); const d = dtstart.slice(6,8);
+        const hh = parseInt(dtstart.slice(9,11),10); const mm = parseInt(dtstart.slice(11,13),10);
+        const dt = new Date(`${y}-${mo}-${d}T${pad(hh)}:${pad(mm)}:00`);
+        dt.setHours(dt.getHours() + 2);
+        dtend = `${dt.getFullYear()}${pad(dt.getMonth()+1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+      }
+
+      const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}@judeurban.github.io`;
+      const now = new Date();
+      const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth()+1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}`;
+      const ics = buildIcsString({ uid, dtstamp, dtstart, dtend, summary: title, location, description: '' });
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      a.href = url;
+      a.setAttribute('download', `${title.replace(/[^a-z0-9 _-]/ig,'') || 'event'}.ics`);
+    } catch (e) {
+      // noop
+    }
+  });
 }
 
 const WEATHER_CACHE = new Map();
@@ -833,14 +950,14 @@ function markdownEvent(text, role, eventFile) {
       return;
     }
     if (inMenu) {
-      const menuItem = line.match(/^[-*]\s+(.+)$/);
+      const menuItem = line.match(/^\s*[-*]\s+(.+)$/);
       if (menuItem) {
         flushParagraph();
         menuItems.push(inlineMarkdown(menuItem[1]));
         return;
       }
     }
-    const row = line.match(/^[-*]\s+\*\*([^*]+):\*\*\s*(.+)$/);
+    const row = line.match(/^\s*[-*]\s+\*\*([^*]+):\*\*\s*(.+)$/);
     if (row && inDetails) {
       flushParagraph();
       rows.push({ label: row[1], value: inlineMarkdown(row[2]) });
@@ -873,6 +990,15 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
   const imageMatch = introHtml.match(/<img class="day-image"[^>]+>/);
   const imageHtml = imageMatch ? imageMatch[0] : "";
   const textHtml = imageHtml ? introHtml.replace(imageHtml, "") : introHtml;
+  // derive helpful fields for calendar export
+  const findRow = label => {
+    const found = rows.find(r => r.label && r.label.toLowerCase().startsWith(label));
+    return found ? stripTags(found.value) : "";
+  };
+  const startsText = findRow('starts');
+  const endsText = findRow('ends');
+  const whereText = findRow('where');
+
   const rowsHtml = rows.map(r => `
     <div class="detail-row">
       <span class="label">${r.label}</span>
@@ -894,6 +1020,18 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
         <div class="weather-sub-block">
           <h4>Forecast</h4>
           ${weatherMarkup({ weatherDate, weatherZip })}
+        </div>
+        <div class="ical-sub-block">
+          <h4>Save event</h4>
+          <a class="add-ical" href="#"
+            role="button"
+            aria-label="Save event to calendar: ${escapeHtml(title)}"
+            data-title="${escapeHtml(title)}"
+            data-date="${escapeHtml(weatherDate || '')}"
+            data-start="${escapeHtml(startsText)}"
+            data-end="${escapeHtml(endsText)}"
+            data-location="${escapeHtml(whereText)}"
+          ><span class="ical-icon" aria-hidden="true">📅</span><span class="ical-label">Save to calendar</span></a>
         </div>
         ${noteHtml ? `<div class="note">${noteHtml}</div>` : ""}
       </div>
@@ -949,6 +1087,7 @@ function render(guest) {
     <div class="reset-row"><button id="resetBtn">Look up a different name</button></div>
   `;
   hydrateWeather();
+  setupIcalLinks();
   document.getElementById("resetBtn").addEventListener("click", () => {
     results.innerHTML = "";
     document.getElementById("feedback").textContent = "";
