@@ -981,7 +981,7 @@ async function getWeather(zip, date) {
   const geocodeResponse = await fetch(geocodeUrl, { cache: "no-store" });
   if (!geocodeResponse.ok) throw new Error("Location lookup unavailable");
   const geocode = await geocodeResponse.json();
-  const location = geocode.results?.[0];
+  const location = (geocode && geocode.results && geocode.results[0]) || null;
   if (!location) throw new Error(`ZIP code ${zip} could not be located`);
 
   const params = new URLSearchParams({
@@ -1000,12 +1000,12 @@ async function getWeather(zip, date) {
   const forecast = await forecastResponse.json();
   const daily = forecast.daily;
   const weather = {
-    icon: weatherIcon(daily.weather_code?.[0]),
-    description: WEATHER_DESCRIPTIONS[daily.weather_code?.[0]] || "Forecast available",
-    high: formatTemperature(daily.temperature_2m_max?.[0]),
-    low: formatTemperature(daily.temperature_2m_min?.[0]),
-    rain: daily.precipitation_probability_max?.[0],
-    gusts: daily.wind_gusts_10m_max?.[0],
+    icon: weatherIcon(daily && daily.weather_code && daily.weather_code[0]),
+    description: WEATHER_DESCRIPTIONS[(daily && daily.weather_code && daily.weather_code[0])] || "Forecast available",
+    high: formatTemperature(daily && daily.temperature_2m_max && daily.temperature_2m_max[0]),
+    low: formatTemperature(daily && daily.temperature_2m_min && daily.temperature_2m_min[0]),
+    rain: daily && daily.precipitation_probability_max && daily.precipitation_probability_max[0],
+    gusts: daily && daily.wind_gusts_10m_max && daily.wind_gusts_10m_max[0],
   };
   WEATHER_CACHE.set(cacheKey, weather);
   return weather;
@@ -1071,7 +1071,7 @@ function parseFrontMatter(text) {
 function markdownEvent(text, role, eventFile) {
   const { metadata, body } = parseFrontMatter(text);
   const eventKey = eventFile.replace(/\.md$/, "");
-  const roleConfig = INVITATION_CONFIG.roles?.[role];
+  const roleConfig = (INVITATION_CONFIG.roles && INVITATION_CONFIG.roles[role]) || null;
   if (!roleConfig || !roleConfig.events.includes(eventKey)) return null;
 
   const visibleLines = [];
@@ -1301,7 +1301,7 @@ function buildOverview(role) {
 
 function render(guest) {
   const results = document.getElementById("results");
-  const label = INVITATION_CONFIG.roles?.[guest.role]?.label || guest.role;
+  const label = (INVITATION_CONFIG.roles && INVITATION_CONFIG.roles[guest.role] && INVITATION_CONFIG.roles[guest.role].label) || guest.role;
 
   results.innerHTML = `
     <hr class="rule">
