@@ -1080,7 +1080,6 @@ async function getWeather(zip, date) {
     timezone: "auto",
     start_date: date,
     end_date: date,
-    forecast_days: "16",
   });
   const forecastResponse = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { cache: "no-store" });
   if (!forecastResponse.ok) throw new Error("Weather forecast unavailable");

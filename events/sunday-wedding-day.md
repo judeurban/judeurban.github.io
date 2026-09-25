@@ -35,3 +35,10 @@ This is the day! It's about an hour east of Tulsa, so plan your drive accordingl
 
 - **Ceremony:** 5 PM
 - **Ends:** 10 PM
+
+## Menu
+
+- **Cocktail Hour:** Coffee, chips, salsa, quacamole, and queso ☕️
+- **Food:** Catrina Fresh Mex, steak/chicken/pork tacos 🌮, rice & beans
+- **Desserts:** Mexican flan
+- *Gluten-free options will be available*
