@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tulsa Recommendations — Jessie & Jude</title>
+<meta name="description" content="Local Tulsa recommendations for out-of-town guests of Jessie & Jude's wedding weekend.">
+<link rel="canonical" href="https://judeurban.github.io/recommendations.html">
+<style>
+  :root {
+    --bg: #fcf4e3;
+    --bg-card: rgba(255, 251, 241, 0.72);
+    --maroon: #a62c25;
+    --maroon-2: #81221d;
+    --ink: #a62c25;
+    --ink-soft: #a62c25;
+    --divider: rgba(166, 44, 37, 0.55);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: "Times New Roman", Times, serif;
+    line-height: 1.6;
+  }
+
+  a { color: var(--maroon); text-decoration: none; }
+  a:hover, a:focus { text-decoration: underline; color: var(--maroon-2); }
+
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  .hero { text-align: center; padding: 1rem 0 2.5rem; }
+  .hero h1 {
+    font-weight: 700;
+    font-size: clamp(2.4rem, 8vw, 4rem);
+    margin: 0 0 0.5rem;
+    color: var(--maroon);
+  }
+  .hero p.tagline {
+    font-style: italic;
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+    margin: 0 0 1.5rem;
+  }
+  .back-link { font-weight: 700; }
+
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+  .filter-bar label {
+    font-weight: 700;
+    color: var(--maroon);
+    font-size: 1rem;
+  }
+  .filter-bar select {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 1.05rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--maroon);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--maroon);
+    cursor: pointer;
+  }
+  .filter-bar select:focus { outline: 2px solid var(--maroon); outline-offset: 2px; }
+
+  .rule { border: none; border-top: 2px dotted var(--divider); margin: 2.5rem 0; }
+
+  .rec-section { margin-bottom: 3rem; }
+  .rec-section h2 {
+    color: var(--maroon);
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    text-align: center;
+    margin: 0 0 1.5rem;
+  }
+
+  .note-list {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.2rem 1.5rem;
+    border: 1px solid rgba(166, 44, 37, 0.2);
+    border-radius: 16px;
+    background: var(--bg-card);
+  }
+  .note-list ul { margin: 0; padding-left: 1.2rem; }
+  .note-list li { margin: 0.4rem 0; }
+
+  .rec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .rec-card {
+    border: 1px solid rgba(166, 44, 37, 0.2);
+    border-top: 6px solid var(--maroon);
+    border-radius: 18px;
+    background: var(--bg-card);
+    box-shadow: 0 12px 24px rgba(118, 51, 35, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .rec-card .map-embed {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border: none;
+    display: block;
+    background: rgba(166, 44, 37, 0.08);
+  }
+  .rec-card .rec-body {
+    padding: 1.1rem 1.3rem 1.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    flex: 1;
+  }
+  .rec-card h3 { margin: 0; color: var(--maroon); font-size: 1.25rem; }
+  .rec-card p { margin: 0; font-size: 1rem; color: var(--ink); }
+  .rec-card .open-map {
+    margin-top: auto;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .load-error {
+    text-align: center;
+    color: var(--maroon);
+    font-size: 0.95rem;
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 480px) {
+    .wrap { padding: 2rem 1rem 3.5rem; }
+    .rec-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>Tulsa Recommendations</h1>
+    <p class="tagline">A few favorite local spots from Jessie &amp; Jude</p>
+    <a class="back-link" href="index.html">&larr; Back to the wedding weekend</a>
+    <div class="filter-bar">
+      <label for="categoryFilter">Show me</label>
+      <select id="categoryFilter">
+        <option value="all">All recommendations</option>
+      </select>
+    </div>
+  </div>
+  <hr class="rule">
+  <div id="recommendations"></div>
+</div>
+
+<script>
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[character]));
+}
+
+function inlineMarkdown(value) {
+  let html = escapeHtml(value);
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  return html;
+}
+
+async function fetchResource(path) {
+  const url = new URL(path, document.baseURI).href;
+  let response;
+  try {
+    response = await fetch(url, { cache: "no-store" });
+  } catch (error) {
+    throw new Error(`${path} failed to fetch (${error.message})`);
+  }
+  if (!response.ok) throw new Error(`${path} returned HTTP ${response.status} (${url})`);
+  return response.text();
+}
+
+// Parses the lightweight recommendations markdown format:
+// "## Section" starts a section, "### Place" starts a place card,
+// "- query: ..." / "- map: ..." are place metadata bullets.
+function parseRecommendations(text) {
+  const lines = text.split(/\r?\n/);
+  const sections = [];
+  let section = null;
+  let place = null;
+  let paragraph = [];
+
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    const html = `<p>${inlineMarkdown(paragraph.join(" "))}</p>`;
+    if (place) place.descriptionHtml += html;
+    paragraph = [];
+  };
+  const flushPlace = () => {
+    flushParagraph();
+    if (place && section) section.places.push(place);
+    place = null;
+  };
+
+  lines.forEach(line => {
+    const sectionMatch = line.match(/^##\s+(.+)$/);
+    const placeMatch = line.match(/^###\s+(.+)$/);
+    const metaMatch = line.match(/^\s*[-*]\s+(query|map|category):\s*(.+)$/);
+    const bulletMatch = line.match(/^\s*[-*]\s+(.+)$/);
+
+    if (sectionMatch) {
+      flushPlace();
+      section = { title: sectionMatch[1].trim(), notes: [], places: [] };
+      sections.push(section);
+      return;
+    }
+    if (placeMatch) {
+      flushPlace();
+      place = { name: placeMatch[1].trim(), descriptionHtml: "", query: "", map: "", category: "other" };
+      return;
+    }
+    if (metaMatch && place) {
+      flushParagraph();
+      if (metaMatch[1] === "query") place.query = metaMatch[2].trim();
+      if (metaMatch[1] === "map") place.map = metaMatch[2].trim();
+      if (metaMatch[1] === "category") place.category = metaMatch[2].trim();
+      return;
+    }
+    if (bulletMatch && section && !place) {
+      section.notes.push(inlineMarkdown(bulletMatch[1]));
+      return;
+    }
+    if (!line.trim()) {
+      flushParagraph();
+      return;
+    }
+    if (!line.startsWith("#")) paragraph.push(line.trim());
+  });
+  flushPlace();
+
+  return sections;
+}
+
+function placeCard(place) {
+  const query = place.query || place.name;
+  const embedSrc = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+  const openHref = place.map || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  return `
+    <div class="rec-card" data-category="${escapeHtml(place.category)}">
+      <iframe class="map-embed" src="${embedSrc}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map of ${escapeHtml(place.name)}"></iframe>
+      <div class="rec-body">
+        <h3>${escapeHtml(place.name)}</h3>
+        ${place.descriptionHtml}
+        <a class="open-map" href="${openHref}" target="_blank" rel="noopener">Open in Google Maps &rarr;</a>
+      </div>
+    </div>`;
+}
+
+function sectionBlock(section) {
+  const notesHtml = section.notes.length
+    ? `<div class="note-list"><ul>${section.notes.map(note => `<li>${note}</li>`).join("")}</ul></div>`
+    : "";
+  const cardsHtml = section.places.length
+    ? `<div class="rec-grid">${section.places.map(placeCard).join("")}</div>`
+    : "";
+  return `
+    <section class="rec-section" data-has-places="${section.places.length > 0}">
+      <h2>${escapeHtml(section.title)}</h2>
+      ${notesHtml}
+      ${cardsHtml}
+    </section>`;
+}
+
+const CATEGORY_LABELS = {
+  food: "Food",
+  coffee: "Coffee",
+  activities: "Activities",
+  museums: "Museums",
+  shopping: "Shopping",
+  nightlife: "Nightlife & Drinks",
+  other: "Other",
+};
+
+function populateCategoryFilter(sections) {
+  const select = document.getElementById("categoryFilter");
+  const categories = new Set();
+  sections.forEach(section => section.places.forEach(place => categories.add(place.category)));
+  [...categories]
+    .sort((a, b) => (CATEGORY_LABELS[a] || a).localeCompare(CATEGORY_LABELS[b] || b))
+    .forEach(category => {
+      select.appendChild(new Option(CATEGORY_LABELS[category] || category, category));
+    });
+  select.addEventListener("change", () => applyCategoryFilter(select.value));
+}
+
+function applyCategoryFilter(category) {
+  document.querySelectorAll(".rec-section").forEach(sectionEl => {
+    const hasPlaces = sectionEl.dataset.hasPlaces === "true";
+    let visiblePlaceCount = 0;
+    sectionEl.querySelectorAll(".rec-card").forEach(card => {
+      const matches = category === "all" || card.dataset.category === category;
+      card.style.display = matches ? "" : "none";
+      if (matches) visiblePlaceCount += 1;
+    });
+    // Sections without any place cards (e.g. "Good to Know") are always shown.
+    sectionEl.style.display = (!hasPlaces || visiblePlaceCount > 0) ? "" : "none";
+  });
+}
+
+async function loadRecommendations() {
+  const container = document.getElementById("recommendations");
+  try {
+    const text = await fetchResource("recommendations.md");
+    const sections = parseRecommendations(text);
+    container.innerHTML = sections.map(sectionBlock).join("");
+    populateCategoryFilter(sections);
+  } catch (error) {
+    container.innerHTML = `<div class="load-error"><strong>Couldn't load recommendations.</strong><p>${escapeHtml(error.message)}</p></div>`;
+  }
+}
+
+loadRecommendations();
+</script>
+</body>
+</html>
