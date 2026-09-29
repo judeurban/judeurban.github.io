@@ -434,7 +434,6 @@
     font-weight: 700;
   }
   .dress-code-block p { margin: 0 0 0.6rem; }
-  .dress-code-button { margin-top: 0.2rem; }
   .pinterest-embed { margin-top: 1rem; }
   .pinterest-embed:empty { display: none; }
   .day-card .day-intro {
@@ -1288,7 +1287,7 @@ function markdownEvent(text, role, eventFile) {
   };
 }
 
-function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "", weatherDate, weatherZip, dressCodeHtml, dressCodeLinkLabel, dressCodeLinkUrl }) {
+function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "", weatherDate, weatherZip, dressCodeHtml, dressCodeLinkLabel, dressCodeLinkUrl, pinterestBoard }) {
   const imageMatch = introHtml.match(/<img class="day-image"[^>]+>/);
   const imageHtml = imageMatch ? imageMatch[0] : "";
   const textHtml = imageHtml ? introHtml.replace(imageHtml, "") : introHtml;
@@ -1299,16 +1298,13 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
       <span class="fill"></span>
       <span class="value">${r.value}</span>
     </div>`).join("");
-  const dressCodeBlock = (dressCodeHtml || dressCodeLinkUrl) ? `
+  const dressCodeBlock = (dressCodeHtml || pinterestBoard) ? `
         <div class="dress-code-block">
           <h4>Dress Code</h4>
           ${dressCodeHtml}
-          ${dressCodeLinkUrl ? `
-          <a class="add-ical dress-code-button" href="${escapeHtml(dressCodeLinkUrl)}" target="_blank" rel="noopener">
-            <span class="ical-label">${escapeHtml(dressCodeLinkLabel || "Dress Code / What to Wear")}</span>
-          </a>
+          ${pinterestBoard ? `
           <div class="pinterest-embed">
-            <a data-pin-do="embedBoard" data-pin-scale-height="240" data-pin-scale-width="80" href="${escapeHtml(dressCodeLinkUrl)}"></a>
+            <a data-pin-do="embedBoard" data-pin-scale-height="240" data-pin-scale-width="80" href="${escapeHtml(pinterestBoard)}"></a>
           </div>` : ""}
         </div>` : "";
   return `
