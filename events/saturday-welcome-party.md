@@ -5,7 +5,8 @@ overviewDay: Saturday
 overviewDate: Oct 10, 2026 at 6:30 PM
 overviewTitle: Welcome Party
 weatherDate: 2026-10-10
-weatherZip: 74055
+weatherLat: 36.25851
+weatherLon: -95.88814
 ---
 ![The barn at the welcome party location](../img/urban-barn.png)
 

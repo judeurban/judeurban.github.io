@@ -1016,30 +1016,7 @@ function isJeffPhillipsName(name) {
 // -----------------------------------------------------------------------
 
 const WEATHER_CACHE = new Map();
-
-const WEATHER_DESCRIPTIONS = {
-  0: "Clear sky",
-  1: "Mainly clear",
-  2: "Partly cloudy",
-  3: "Overcast",
-  45: "Foggy",
-  48: "Foggy",
-  51: "Light drizzle",
-  53: "Drizzle",
-  55: "Heavy drizzle",
-  61: "Light rain",
-  63: "Rain",
-  65: "Heavy rain",
-  71: "Light snow",
-  73: "Snow",
-  75: "Heavy snow",
-  80: "Light rain showers",
-  81: "Rain showers",
-  82: "Heavy rain showers",
-  95: "Thunderstorms",
-  96: "Thunderstorms with hail",
-  99: "Thunderstorms with hail",
-};
+let WEATHER_DATA_PROMISE;
 
 const WEATHER_ICONS = {
   clear: "☼",
@@ -1049,88 +1026,73 @@ const WEATHER_ICONS = {
   storm: "⚡",
 };
 
-function weatherIcon(code) {
-  if (code >= 95) return WEATHER_ICONS.storm;
-  if (code >= 71 && code <= 77) return WEATHER_ICONS.snow;
-  if (code >= 51 && code <= 82) return WEATHER_ICONS.rain;
-  if (code >= 1 && code <= 3) return WEATHER_ICONS.cloudy;
-  return WEATHER_ICONS.clear;
+function weatherIcon(description) {
+  const condition = description.toLowerCase();
+  if (condition.includes("thunderstorm") || condition.includes("storm")) return WEATHER_ICONS.storm;
+  if (condition.includes("snow") || condition.includes("sleet")) return WEATHER_ICONS.snow;
+  if (condition.includes("rain") || condition.includes("shower") || condition.includes("drizzle")) return WEATHER_ICONS.rain;
+  if (condition.includes("cloud") || condition.includes("overcast") || condition.includes("fog")) return WEATHER_ICONS.cloudy;
+  if (condition.includes("sun") || condition.includes("clear")) return WEATHER_ICONS.clear;
+  return WEATHER_ICONS.cloudy;
 }
 
 function formatTemperature(value) {
-  return `${Math.round(value)}°F`;
-}
-
-function daysFromToday(date) {
-  const today = new Date(`${new Date().toISOString().slice(0, 10)}T12:00:00Z`);
-  const target = new Date(`${date}T12:00:00Z`);
-  return Math.round((target - today) / 86400000);
+  return typeof value === "number" ? `${Math.round(value)}°F` : "—";
 }
 
 // Errors in this class describe an expected, guest-friendly reason no forecast
 // exists yet (too far out, or the date has passed) rather than a real failure.
 class ForecastNotReadyError extends Error {}
 
-async function getWeather(zip, date) {
-  const cacheKey = `${zip}:${date}`;
+async function getWeather(latitude, longitude, date) {
+  const cacheKey = `${latitude}:${longitude}:${date}`;
   if (WEATHER_CACHE.has(cacheKey)) return WEATHER_CACHE.get(cacheKey);
 
-  const daysAway = daysFromToday(date);
-  if (daysAway < 0) throw new ForecastNotReadyError("Forecasts are no longer available for this date");
-  // Open-Meteo's daily forecast covers today (offset 0) through offset 15 (16 days total).
-  if (daysAway > 15) throw new ForecastNotReadyError("Forecast will be available closer to the event date");
-
-  const geocodeUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(zip)}&count=1&language=en&format=json`;
-  const geocodeResponse = await fetch(geocodeUrl, { cache: "no-store" });
-  if (!geocodeResponse.ok) throw new Error("Location lookup unavailable");
-  const geocode = await geocodeResponse.json();
-  const location = (geocode && geocode.results && geocode.results[0]) || null;
-  if (!location) throw new Error(`ZIP code ${zip} could not be located`);
-
-  const params = new URLSearchParams({
-    latitude: location.latitude,
-    longitude: location.longitude,
-    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_gusts_10m_max",
-    temperature_unit: "fahrenheit",
-    wind_speed_unit: "mph",
-    timezone: "auto",
-    start_date: date,
-    end_date: date,
-  });
-  const forecastResponse = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { cache: "no-store" });
-  if (!forecastResponse.ok) throw new Error("Weather forecast unavailable");
-  const forecast = await forecastResponse.json();
-  const daily = forecast.daily;
-  const weather = {
-    icon: weatherIcon(daily && daily.weather_code && daily.weather_code[0]),
-    description: WEATHER_DESCRIPTIONS[(daily && daily.weather_code && daily.weather_code[0])] || "Forecast available",
-    high: formatTemperature(daily && daily.temperature_2m_max && daily.temperature_2m_max[0]),
-    low: formatTemperature(daily && daily.temperature_2m_min && daily.temperature_2m_min[0]),
-    rain: daily && daily.precipitation_probability_max && daily.precipitation_probability_max[0],
-    gusts: daily && daily.wind_gusts_10m_max && daily.wind_gusts_10m_max[0],
-  };
+  if (!WEATHER_DATA_PROMISE) {
+    WEATHER_DATA_PROMISE = fetch("weather.json", { cache: "no-store" })
+      .then(response => {
+        if (!response.ok) throw new Error("Weather snapshot unavailable");
+        return response.json();
+      })
+      .catch(error => {
+        WEATHER_DATA_PROMISE = null;
+        throw error;
+      });
+  }
+  const snapshot = await WEATHER_DATA_PROMISE;
+  const weather = snapshot.forecasts && snapshot.forecasts[cacheKey];
+  if (!weather || !weather.available) {
+    throw new ForecastNotReadyError(weather && weather.message || "Forecast will be available closer to the event date");
+  }
   WEATHER_CACHE.set(cacheKey, weather);
   return weather;
 }
 
 function weatherMarkup(event) {
-  return `<div class="weather-strip is-pending" data-weather-date="${escapeHtml(event.weatherDate)}" data-weather-zip="${escapeHtml(event.weatherZip)}">Loading forecast...</div>`;
+  return `<div class="weather-strip is-pending" data-weather-date="${escapeHtml(event.weatherDate)}" data-weather-lat="${escapeHtml(event.weatherLat)}" data-weather-lon="${escapeHtml(event.weatherLon)}">Loading forecast...</div>`;
 }
 
 async function hydrateWeather() {
   const strips = document.querySelectorAll("[data-weather-date]");
   await Promise.all([...strips].map(async strip => {
     const date = strip.dataset.weatherDate;
-    const zip = strip.dataset.weatherZip;
+    const latitude = strip.dataset.weatherLat;
+    const longitude = strip.dataset.weatherLon;
     try {
-      const weather = await getWeather(zip, date);
+      const weather = await getWeather(latitude, longitude, date);
       strip.classList.remove("is-pending");
-      strip.innerHTML = `<span class="weather-icon" aria-hidden="true">${weather.icon}</span>${weather.description} · ${weather.high} / ${weather.low} · ${weather.rain}% chance of rain · gusts to ${Math.round(weather.gusts)} mph`;
+      const rain = weather.rain === null ? "precipitation chance unavailable" : `${weather.rain}% chance of rain`;
+      const wind = typeof weather.wind === "number" ? `wind ${weather.wind} mph` : "wind unavailable";
+      const icon = document.createElement("span");
+      icon.className = "weather-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = weatherIcon(weather.description);
+      strip.replaceChildren(icon, document.createTextNode(`${weather.description} · ${weather.high} / ${weather.low} · ${rain} · ${wind}`));
     } catch (error) {
       strip.classList.remove("is-pending");
       strip.classList.add("is-unavailable");
-      // Only expected "not ready yet" reasons get their specific message; any real
-      // failure (network, geocoding, API) shows one consistent, friendly line.
+      // Only expected "not ready yet" reasons get their specific message; API and
+      // network failures show one consistent, friendly line.
       strip.textContent = error instanceof ForecastNotReadyError
         ? error.message
         : "Forecast unavailable right now. Please check again later.";
@@ -1287,7 +1249,7 @@ function markdownEvent(text, role, eventFile) {
   };
 }
 
-function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "", weatherDate, weatherZip, dressCodeHtml, dressCodeLinkLabel, dressCodeLinkUrl, pinterestBoard }) {
+function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "", weatherDate, weatherLat, weatherLon, dressCodeHtml, dressCodeLinkLabel, dressCodeLinkUrl, pinterestBoard }) {
   const imageMatch = introHtml.match(/<img class="day-image"[^>]+>/);
   const imageHtml = imageMatch ? imageMatch[0] : "";
   const textHtml = imageHtml ? introHtml.replace(imageHtml, "") : introHtml;
@@ -1321,7 +1283,7 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
         ${menuHtml ? `<div class="menu-sub-block"><h4>Menu</h4>${menuHtml}</div>` : ""}
         <div class="weather-sub-block">
           <h4>Forecast</h4>
-          ${weatherMarkup({ weatherDate, weatherZip })}
+          ${weatherMarkup({ weatherDate, weatherLat, weatherLon })}
         </div>
         ${dressCodeBlock}
         ${noteHtml ? `<div class="note">${noteHtml}</div>` : ""}

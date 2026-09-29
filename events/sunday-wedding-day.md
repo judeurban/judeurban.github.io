@@ -5,7 +5,8 @@ overviewDay: Sunday
 overviewDate: Oct 11, 2026
 overviewTitle: Wedding Day
 weatherDate: 2026-10-11
-weatherZip: 74365
+weatherLat: 36.29287
+weatherLon: -95.15330
 pinterestBoard: https://www.pinterest.com/jessiereed21/urban-wedding-dresscode-inspo/
 ---
 ![Lakeview Hills wedding venue at sunset](../img/lakeview-hills.png)
@@ -44,7 +45,7 @@ This is the day! It's about an hour east of Tulsa, so plan your drive accordingl
 - **Desserts:** Mexican flan
 - *Gluten-free options will be available*
 
-## Dress Code
-**Garden Party Formal**. Fun, colorful and something you feel good dancing in! Think elevated Sunday Best. We can’t wait to see everyone dressed up!
+## Dress Code: Garden Party Formal
+Fun, colorful and something you feel good dancing in! Think elevated Sunday Best. We can’t wait to see everyone dressed up!
 
 [Dress Code / What to Wear](https://pin.it/5HoxvJctO)

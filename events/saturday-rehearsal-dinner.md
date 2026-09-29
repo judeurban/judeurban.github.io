@@ -5,7 +5,8 @@ overviewDay: Saturday
 overviewDate: Oct 10, 2026 at 4 PM
 overviewTitle: Rehearsal
 weatherDate: 2026-10-10
-weatherZip: 74055
+weatherLat: 36.25851
+weatherLon: -95.88814
 ---
 ![The barn at the rehearsal dinner location](../img/urban-barn.png)
 

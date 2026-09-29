@@ -19,4 +19,6 @@ GitHub Pages note: keep `.nojekyll` at the repository root. The site fetches the
 
 ## Weather
 
-Each event Markdown file includes a `weatherDate` and `weatherZip`. The page requests the latest daily forecast from Open-Meteo on each refresh, using the ZIP code to locate the event. Forecasts are available up to 16 days ahead; before that window opens, the event shows a short availability message instead of guessed weather.
+Each event Markdown file includes a `weatherDate`, `weatherLat`, and `weatherLon`. A scheduled GitHub Actions workflow requests the matching daily forecast from OpenWeather One Call API 4.0 and publishes only the required forecast fields in `weather.json`; the browser never receives the API key or raw API response. One Call 4.0 supports daily forecasts up to 1.5 years ahead and requires its separate One Call subscription.
+
+To enable weather updates, create a GitHub Actions environment named `weather-data`, add an environment secret named `OPENWEATHER_API_KEY`, and restrict that environment to the `main` branch. In repository Settings > Pages, set the publishing source to **GitHub Actions**. The workflow refreshes the forecast every six hours and on pushes to `main`. The local `.secrets` file is ignored and is not used by the published site.
