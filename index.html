@@ -420,6 +420,23 @@
   }
   .menu-sub-block ul { margin: 0; padding-left: 1.2rem; }
   .menu-sub-block li { margin: 0.2rem 0; }
+  .dress-code-block {
+    margin-top: 1.4rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid rgba(166, 44, 37, 0.2);
+    border-radius: 10px;
+    background: rgba(252, 244, 227, 0.7);
+  }
+  .dress-code-block h4 {
+    margin: 0 0 0.35rem;
+    color: var(--maroon);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .dress-code-block p { margin: 0 0 0.6rem; }
+  .dress-code-button { margin-top: 0.2rem; }
+  .pinterest-embed { margin-top: 1rem; }
+  .pinterest-embed:empty { display: none; }
   .day-card .day-intro {
     max-width: 760px;
     margin: 0 auto 2.5rem;
@@ -1182,14 +1199,18 @@ function markdownEvent(text, role, eventFile) {
 
   let inDetails = false;
   let inMenu = false;
+  let inDress = false;
   let paragraph = [];
   const intro = [];
   const rows = [];
   const notes = [];
   const menuItems = [];
+  const dressParas = [];
+  let dressLink = null;
   const flushParagraph = () => {
     if (!paragraph.length) return;
     if (inMenu) menuItems.push(inlineMarkdown(paragraph.join(" ")));
+    else if (inDress) dressParas.push(`<p>${inlineMarkdown(paragraph.join(" "))}</p>`);
     else {
       const html = `<p>${inlineMarkdown(paragraph.join(" "))}</p>`;
       (inDetails ? notes : intro).push(html);
@@ -1202,12 +1223,21 @@ function markdownEvent(text, role, eventFile) {
       flushParagraph();
       inDetails = true;
       inMenu = false;
+      inDress = false;
       return;
     }
     if (line.trim() === "## Menu") {
       flushParagraph();
       inDetails = false;
       inMenu = true;
+      inDress = false;
+      return;
+    }
+    if (line.trim() === "## Dress Code") {
+      flushParagraph();
+      inDetails = false;
+      inMenu = false;
+      inDress = true;
       return;
     }
     if (inMenu) {
@@ -1215,6 +1245,14 @@ function markdownEvent(text, role, eventFile) {
       if (menuItem) {
         flushParagraph();
         menuItems.push(inlineMarkdown(menuItem[1]));
+        return;
+      }
+    }
+    if (inDress) {
+      const linkOnly = line.trim().match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (linkOnly) {
+        flushParagraph();
+        dressLink = { label: linkOnly[1], url: linkOnly[2] };
         return;
       }
     }
@@ -1243,11 +1281,14 @@ function markdownEvent(text, role, eventFile) {
     rows,
     menuHtml: menuItems.length ? `<ul>${menuItems.map(item => `<li>${item}</li>`).join("")}</ul>` : "",
     noteHtml: notes.join(""),
+    dressCodeHtml: dressParas.join(""),
+    dressCodeLinkLabel: dressLink ? dressLink.label : "",
+    dressCodeLinkUrl: dressLink ? dressLink.url : "",
     variant: metadata.variant || "",
   };
 }
 
-function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "", weatherDate, weatherZip }) {
+function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "", weatherDate, weatherZip, dressCodeHtml, dressCodeLinkLabel, dressCodeLinkUrl }) {
   const imageMatch = introHtml.match(/<img class="day-image"[^>]+>/);
   const imageHtml = imageMatch ? imageMatch[0] : "";
   const textHtml = imageHtml ? introHtml.replace(imageHtml, "") : introHtml;
@@ -1258,6 +1299,18 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
       <span class="fill"></span>
       <span class="value">${r.value}</span>
     </div>`).join("");
+  const dressCodeBlock = (dressCodeHtml || dressCodeLinkUrl) ? `
+        <div class="dress-code-block">
+          <h4>Dress Code</h4>
+          ${dressCodeHtml}
+          ${dressCodeLinkUrl ? `
+          <a class="add-ical dress-code-button" href="${escapeHtml(dressCodeLinkUrl)}" target="_blank" rel="noopener">
+            <span class="ical-label">${escapeHtml(dressCodeLinkLabel || "Dress Code / What to Wear")}</span>
+          </a>
+          <div class="pinterest-embed">
+            <a data-pin-do="embedBoard" data-pin-scale-height="240" data-pin-scale-width="80" href="${escapeHtml(dressCodeLinkUrl)}"></a>
+          </div>` : ""}
+        </div>` : "";
   return `
     <div class="day-card ${variant}">
       <h2>${escapeHtml(title).replace(/\s*·\s*/g, '<br>')}</h2>
@@ -1274,6 +1327,7 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
           <h4>Forecast</h4>
           ${weatherMarkup({ weatherDate, weatherZip })}
         </div>
+        ${dressCodeBlock}
         ${noteHtml ? `<div class="note">${noteHtml}</div>` : ""}
       </div>
     </div>`;
@@ -1340,6 +1394,20 @@ function buildOverview(role) {
     </section>`;
 }
 
+function loadPinterestWidgets() {
+  if (window.PinUtils) {
+    window.PinUtils.build();
+    return;
+  }
+  if (document.getElementById("pinit-js")) return;
+  const script = document.createElement("script");
+  script.id = "pinit-js";
+  script.async = true;
+  script.defer = true;
+  script.src = "https://assets.pinterest.com/js/pinit.js";
+  document.body.appendChild(script);
+}
+
 function render(guest) {
   const results = document.getElementById("results");
   const label = (INVITATION_CONFIG.roles && INVITATION_CONFIG.roles[guest.role] && INVITATION_CONFIG.roles[guest.role].label) || guest.role;
@@ -1354,6 +1422,7 @@ function render(guest) {
   `;
   hydrateWeather();
   setupIcalButton(guest.name);
+  loadPinterestWidgets();
   document.getElementById("resetBtn").addEventListener("click", () => {
     results.innerHTML = "";
     document.getElementById("feedback").textContent = "";

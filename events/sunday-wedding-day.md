@@ -38,7 +38,12 @@ This is the day! It's about an hour east of Tulsa, so plan your drive accordingl
 
 ## Menu
 
-- **Cocktail Hour:** Coffee, chips, salsa, quacamole, and queso ☕️
-- **Food:** Catrina Fresh Mex, steak/chicken/pork tacos 🌮, rice & beans
+- **Cocktail Hour:** Coffee, chips, salsa, quacamole, and queso
+- **Food:** Catrina Fresh Mex, steak/chicken/pork tacos, rice & beans
 - **Desserts:** Mexican flan
 - *Gluten-free options will be available*
+
+## Dress Code
+**Garden Party Formal**. Fun, colorful and something you feel good dancing in! Think elevated Sunday Best. We can’t wait to see everyone dressed up!
+
+[Dress Code / What to Wear](https://pin.it/5HoxvJctO)
