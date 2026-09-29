@@ -19,6 +19,8 @@ GitHub Pages note: keep `.nojekyll` at the repository root. The site fetches the
 
 ## Weather
 
-Each event Markdown file includes a `weatherDate`, `weatherLat`, and `weatherLon`. A scheduled GitHub Actions workflow requests the matching daily forecast from OpenWeather One Call API 4.0 and publishes only the required forecast fields in `weather.json`; the browser never receives the API key or raw API response. One Call 4.0 supports daily forecasts up to 1.5 years ahead and requires its separate One Call subscription.
+Each event Markdown file includes a `weatherDate` and `weatherZip`. A scheduled GitHub Actions workflow resolves each US ZIP code through OpenWeather's Geocoding API, requests the matching daily forecast from One Call API 4.0, and publishes only the required forecast fields in `weather.json`; the browser never receives the API key or raw API response. ZIP codes resolve to their geographic centroids. One Call 4.0 supports daily forecasts up to 1.5 years ahead and requires its separate One Call subscription.
 
 To enable weather updates, create a GitHub Actions environment named `weather-data`, add an environment secret named `OPENWEATHER_API_KEY`, and restrict that environment to the `main` branch. In repository Settings > Pages, set the publishing source to **GitHub Actions**. The workflow refreshes the forecast every six hours and on pushes to `main`. The local `.secrets` file is ignored and is not used by the published site.
+
+For a local preview, keep the OpenWeather API key on one line in the ignored `.secrets` file, run `node scripts/update-weather.mjs weather.json`, then serve the repository root (for example, with `python3 -m http.server 8000`). The generated `weather.json` is ignored by Git and contains forecast data only, not the API key.

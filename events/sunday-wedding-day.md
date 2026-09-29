@@ -5,8 +5,7 @@ overviewDay: Sunday
 overviewDate: Oct 11, 2026
 overviewTitle: Wedding Day
 weatherDate: 2026-10-11
-weatherLat: 36.29287
-weatherLon: -95.15330
+weatherZip: 74365
 pinterestBoard: https://www.pinterest.com/jessiereed21/urban-wedding-dresscode-inspo/
 ---
 ![Lakeview Hills wedding venue at sunset](../img/lakeview-hills.png)

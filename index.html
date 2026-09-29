@@ -384,7 +384,7 @@
   }
   .weather-icon {
     display: inline-block;
-    margin-right: 0.35rem;
+    margin-right: 0.55rem;
     color: var(--maroon);
     font-size: 1.2em;
     line-height: 0;
@@ -1044,8 +1044,8 @@ function formatTemperature(value) {
 // exists yet (too far out, or the date has passed) rather than a real failure.
 class ForecastNotReadyError extends Error {}
 
-async function getWeather(latitude, longitude, date) {
-  const cacheKey = `${latitude}:${longitude}:${date}`;
+async function getWeather(zip, date) {
+  const cacheKey = `${zip}:${date}`;
   if (WEATHER_CACHE.has(cacheKey)) return WEATHER_CACHE.get(cacheKey);
 
   if (!WEATHER_DATA_PROMISE) {
@@ -1069,25 +1069,27 @@ async function getWeather(latitude, longitude, date) {
 }
 
 function weatherMarkup(event) {
-  return `<div class="weather-strip is-pending" data-weather-date="${escapeHtml(event.weatherDate)}" data-weather-lat="${escapeHtml(event.weatherLat)}" data-weather-lon="${escapeHtml(event.weatherLon)}">Loading forecast...</div>`;
+  return `<div class="weather-strip is-pending" data-weather-date="${escapeHtml(event.weatherDate)}" data-weather-zip="${escapeHtml(event.weatherZip)}">Loading forecast...</div>`;
 }
 
 async function hydrateWeather() {
   const strips = document.querySelectorAll("[data-weather-date]");
   await Promise.all([...strips].map(async strip => {
     const date = strip.dataset.weatherDate;
-    const latitude = strip.dataset.weatherLat;
-    const longitude = strip.dataset.weatherLon;
+    const zip = strip.dataset.weatherZip;
     try {
-      const weather = await getWeather(latitude, longitude, date);
+      const weather = await getWeather(zip, date);
       strip.classList.remove("is-pending");
-      const rain = weather.rain === null ? "precipitation chance unavailable" : `${weather.rain}% chance of rain`;
-      const wind = typeof weather.wind === "number" ? `wind ${weather.wind} mph` : "wind unavailable";
+      const description = weather.description.replace(/^./, character => character.toUpperCase());
+      const high = formatTemperature(weather.high);
+      const low = formatTemperature(weather.low);
+      const rain = weather.rain === null ? "Rain chance unavailable" : `Rain ${weather.rain}%`;
+      const wind = typeof weather.wind === "number" ? `Wind ${weather.wind} mph` : "Wind unavailable";
       const icon = document.createElement("span");
       icon.className = "weather-icon";
       icon.setAttribute("aria-hidden", "true");
-      icon.textContent = weatherIcon(weather.description);
-      strip.replaceChildren(icon, document.createTextNode(`${weather.description} · ${weather.high} / ${weather.low} · ${rain} · ${wind}`));
+      icon.textContent = weatherIcon(description);
+      strip.replaceChildren(icon, document.createTextNode(`${description} · High ${high} · Low ${low} · ${rain} · ${wind}`));
     } catch (error) {
       strip.classList.remove("is-pending");
       strip.classList.add("is-unavailable");
@@ -1249,7 +1251,7 @@ function markdownEvent(text, role, eventFile) {
   };
 }
 
-function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "", weatherDate, weatherLat, weatherLon, dressCodeHtml, dressCodeLinkLabel, dressCodeLinkUrl, pinterestBoard }) {
+function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "", weatherDate, weatherZip, dressCodeHtml, dressCodeLinkLabel, dressCodeLinkUrl, pinterestBoard }) {
   const imageMatch = introHtml.match(/<img class="day-image"[^>]+>/);
   const imageHtml = imageMatch ? imageMatch[0] : "";
   const textHtml = imageHtml ? introHtml.replace(imageHtml, "") : introHtml;
@@ -1283,7 +1285,7 @@ function dayCard({ title, date, introHtml, rows, menuHtml, noteHtml, variant = "
         ${menuHtml ? `<div class="menu-sub-block"><h4>Menu</h4>${menuHtml}</div>` : ""}
         <div class="weather-sub-block">
           <h4>Forecast</h4>
-          ${weatherMarkup({ weatherDate, weatherLat, weatherLon })}
+          ${weatherMarkup({ weatherDate, weatherZip })}
         </div>
         ${dressCodeBlock}
         ${noteHtml ? `<div class="note">${noteHtml}</div>` : ""}

@@ -2,6 +2,7 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 const API_ROOT = "https://api.openweathermap.org/data/4.0/onecall/timeline/1day";
+const ZIP_API_ROOT = "https://api.openweathermap.org/geo/1.0/zip";
 const MAX_PAGES = 64;
 const FORECAST_UNAVAILABLE = "Forecast will be available closer to the event date";
 
@@ -38,8 +39,8 @@ function todayAtTimezone(timeZone) {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-function forecastKey(latitude, longitude, date) {
-  return `${latitude}:${longitude}:${date}`;
+function forecastKey(zip, date) {
+  return `${zip}:${date}`;
 }
 
 function buildRequestUrl(latitude, longitude, apiKey, start, count) {
@@ -51,6 +52,26 @@ function buildRequestUrl(latitude, longitude, apiKey, start, count) {
   if (start) url.searchParams.set("start", start);
   if (count) url.searchParams.set("cnt", count);
   return url;
+}
+
+async function geocodeZip(zip, apiKey) {
+  const url = new URL(ZIP_API_ROOT);
+  url.searchParams.set("zip", `${zip},US`);
+  url.searchParams.set("appid", apiKey);
+
+  let response;
+  try {
+    response = await fetch(url, { redirect: "error" });
+  } catch {
+    throw new Error("OpenWeather ZIP lookup network request failed");
+  }
+  if (!response.ok) throw new Error(`OpenWeather ZIP lookup failed with HTTP ${response.status}`);
+
+  const location = await response.json();
+  if (location.country !== "US" || !Number.isFinite(location.lat) || !Number.isFinite(location.lon)) {
+    throw new Error(`OpenWeather returned invalid coordinates for ZIP ${zip}`);
+  }
+  return { latitude: location.lat, longitude: location.lon };
 }
 
 async function fetchForecast(latitude, longitude, date, apiKey) {
@@ -85,48 +106,68 @@ async function fetchForecast(latitude, longitude, date, apiKey) {
     if (!payload.next) return null;
     let nextUrl;
     try {
-      nextUrl = new URL(payload.next);
+      nextUrl = new URL(payload.next, API_ROOT);
     } catch {
       throw new Error("OpenWeather returned an invalid pagination URL");
     }
-    if (nextUrl.origin !== "https://api.openweathermap.org" || nextUrl.pathname !== new URL(API_ROOT).pathname) {
-      throw new Error("OpenWeather returned an unexpected pagination URL");
-    }
     const start = nextUrl.searchParams.get("start");
     const count = nextUrl.searchParams.get("cnt");
-    if (!start || visitedStarts.has(start)) return null;
+    if (!/^\d+$/.test(start || "") || (count && (!/^\d+$/.test(count) || Number(count) > 10))) {
+      throw new Error("OpenWeather returned invalid pagination parameters");
+    }
+    if (visitedStarts.has(start)) return null;
     visitedStarts.add(start);
-    requestUrl = buildRequestUrl(latitude, longitude, apiKey, start, count);
+    requestUrl = buildRequestUrl(latitude, longitude, apiKey, start, count || undefined);
   }
 
   throw new Error("OpenWeather forecast pagination limit exceeded");
 }
 
 async function generateWeatherSnapshot(outputPath) {
-  const apiKey = process.env.OPENWEATHER_API_KEY;
+  let apiKey = process.env.OPENWEATHER_API_KEY;
+  if (!apiKey) {
+    try {
+      const localSecret = (await readFile(".secrets", "utf8")).trim();
+      const assignment = localSecret.match(/^([A-Za-z_][A-Za-z0-9_ -]*)=([A-Za-z0-9_-]{16,128})$/);
+      const rawKey = localSecret.match(/^([A-Za-z0-9_-]{16,128})$/);
+      const label = assignment && assignment[1].replace(/[^A-Za-z]/g, "");
+      if (assignment && /weather.*key/i.test(label)) {
+        apiKey = assignment[2];
+      } else if (rawKey) {
+        apiKey = rawKey[1];
+      } else {
+        throw new Error("Local .secrets must contain a single OpenWeather API key line");
+      }
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
   if (!apiKey) throw new Error("OPENWEATHER_API_KEY is required");
 
   const eventFiles = JSON.parse(await readFile("events/events.json", "utf8"));
   const forecasts = {};
+  const locations = new Map();
   const requests = new Map();
 
   for (const eventFile of eventFiles) {
     const metadata = parseFrontMatter(await readFile(resolve("events", eventFile), "utf8"));
-    const { weatherDate: date, weatherLat: latitude, weatherLon: longitude } = metadata;
-    if (!date || !latitude || !longitude) throw new Error(`Missing weather metadata in ${eventFile}`);
+    const { weatherDate: date, weatherZip: zip } = metadata;
+    if (!date || !/^\d{5}$/.test(zip || "")) throw new Error(`Missing or invalid weather metadata in ${eventFile}`);
 
-    const key = forecastKey(latitude, longitude, date);
+    const key = forecastKey(zip, date);
     if (forecasts[key]) continue;
     if (date < todayAtTimezone("America/Chicago")) {
       forecasts[key] = { available: false, message: "Forecasts are no longer available for this date" };
       continue;
     }
 
-    const locationKey = `${latitude}:${longitude}:${date}`;
-    if (!requests.has(locationKey)) {
-      requests.set(locationKey, fetchForecast(Number(latitude), Number(longitude), date, apiKey));
+    if (!locations.has(zip)) locations.set(zip, geocodeZip(zip, apiKey));
+    const { latitude, longitude } = await locations.get(zip);
+
+    if (!requests.has(key)) {
+      requests.set(key, fetchForecast(latitude, longitude, date, apiKey));
     }
-    const forecast = await requests.get(locationKey);
+    const forecast = await requests.get(key);
     forecasts[key] = forecast || { available: false, message: FORECAST_UNAVAILABLE };
   }
 
